@@ -1,0 +1,56 @@
+[project]
+name = "park-smart-harness"
+version = "0.1.0"
+description = "Smart-park agent harness: transactional inner loop + layered context + deny-first tool governance, with a self-contained RAG fork."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.7.0",
+  "pydantic-settings>=2.3.0",
+  "httpx>=0.27.0",
+  "openai>=1.40.0",
+]
+
+[project.optional-dependencies]
+# Hot/persistent conversation stores + idempotency ledger (lazy-imported; only needed for the
+# real RedisConversationStore / Postgres audit ledger — offline tests run without these).
+storage = [
+  "redis>=5.0.0",
+  "psycopg[binary]>=3.2.0",
+]
+# harness_rag live retrieval (milvus vector store + chunking). Offline tests use Fake retrievers.
+rag = [
+  "pymilvus>=2.5.0,<2.6.0",
+  "langchain-text-splitters>=0.3.0",
+]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-timeout>=2.3.0",
+  "pytest-asyncio>=1.0",
+  "ruff>=0.15.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+timeout = 60
+asyncio_mode = "auto"
+addopts = "--strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "RUF"]
+ignore = ["E402", "E501", "RUF001"]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
