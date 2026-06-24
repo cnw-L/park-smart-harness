@@ -44,6 +44,18 @@ def make_propose_control_tool(store: ProposalStore, backend: BackendClient,
                 return ToolResult(ok=False, content="", error=(
                     f"未找到名为「{target}」的设备(后端连接正常,但无此设备)。"
                     f"请用户确认设备名或编号;可先查设备运行状态列出可用设备。"))
+            if len(hits) > 1:
+                # ★歧义硬闸:名字匹配到多台(如"空调机组"→106/101/107…)→ **绝不替用户选第一台**。
+                #   控制必须唯一目标,否则会控错设备。仅当用户给的是某台精确全名才放行。
+                exact = [h for h in hits if (h.name or "") == target]
+                if len(exact) == 1:
+                    hits = exact
+                else:
+                    cand = "、".join(f"{h.name}({h.status})" for h in hits[:12] if h.name)
+                    return ToolResult(ok=False, content="", error=(
+                        f"「{target}」匹配到 {len(hits)} 台设备,控制必须唯一目标、**绝不替用户选**。"
+                        f"**请把下面候选完整列给用户,并明确告诉用户怎么回复**——回设备编号即可(如「空调机组101」)。"
+                        f"候选清单:{cand}"))
             h0 = hits[0]
             pt_id = pt_id or h0.point_type_id
             dev_id = dev_id or h0.device_id

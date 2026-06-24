@@ -41,6 +41,6 @@ def test_no_budget_means_no_truncation():
 def test_subsystem_reads_budgeted_control_not():
     sub = build_tool_subsystem(model_caller=FakeModelCaller([]))
     reg = sub.registry
-    for name in ["facility_agent", "records_agent", "meeting_query", "knowledge_query"]:
+    for name in ["facility_agent", "record_query", "meeting_query", "knowledge_query"]:
         assert isinstance(reg.get(name).output_budget, OutputBudget), name
     assert reg.get("execute_proposal").output_budget is None       # 控不截

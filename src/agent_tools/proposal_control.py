@@ -80,7 +80,17 @@ class ProposalControlCapability:
                 return ToolResult(ok=False, content="",
                                   error=f"拒绝执行不可逆控制(F3 门栓): {name}")
             token = proposal.token if proposal is not None else ""
-            readback = await self._execute(name, args, token=token)
+            # ★真下发可能抛(token 失效/控制接口不通/超时)——必须接住,**不能让异常炸穿确认流**
+            #   (否则前端只看到 "network error",看不到真因)。失败如实回 ok=False + 真原因。
+            try:
+                readback = await self._execute(name, args, token=token)
+            except Exception as exc:
+                self._store.pop(pending.handle)
+                code = getattr(exc, "code", "") or "unknown"
+                return ToolResult(ok=False, content="", error=(
+                    f"控制下发失败(后端报错 code={code}):{exc}。"
+                    f"**把这个真实后端报错原样转告用户**——别臆断成 token 失效(读接口此刻可能正常,失败更可能是"
+                    f"控制权限/参数/接口连通问题)。"))
             result = ToolResult(ok=True, content=(
                 f"[executed] {name} args={args} (idem={pending.idem_key}) readback={readback}"))
             self._ledger[pending.idem_key] = result

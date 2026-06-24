@@ -40,6 +40,28 @@ def run(coro):
     return asyncio.run(coro)
 
 
+# ─── 未知工具名:可恢复,绝不 KeyError 炸穿(真机 verify 抓到:子 agent 喊 plan) ───
+
+def test_unknown_tool_call_is_recoverable_not_crash():
+    """模型(qwen)幻觉工具名(实测:facility 子 agent 里喊主 loop 才有的 plan)→
+    合成**可恢复**错误让模型自纠,绝不让 registry.get 的 KeyError 炸穿循环/子 agent。"""
+    reg = LoopToolRegistry(); reg.register(echo_tool())
+    fake = FakeModelCaller([
+        ModelTurn(content="", tool_calls=[ToolCallReq(id="x1", name="plan", arguments={})]),  # 未知工具
+        ModelTurn(content="改用提供的工具完成", tool_calls=[]),                                  # 自纠收尾
+    ])
+    conv = _seeded()
+    cfg = _cfg(); budget = BudgetTracker(cfg.budget)
+    store = InMemoryConversationStore()
+
+    res = run(run_loop(cfg, conv, reg, budget, fake, store=store))
+
+    assert res.status == "completed"                              # 没崩、正常收尾
+    msgs = run(store.load("t")).messages
+    err = [m for m in msgs if m.role == "tool" and "未知工具" in (m.content or "")]
+    assert err and err[0].is_error and err[0].name == "plan"     # 合成了可恢复错误给模型看见
+
+
 # ─── 1. 无工具调用 + 非空内容 → completed,one completed boundary ──────────────
 
 def test_no_tool_calls_completed():

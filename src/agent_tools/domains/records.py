@@ -1,29 +1,21 @@
-"""事项处理超域 —— **子 agent**(工单/告警/事件…的查询 + 多记录综合)。
+"""事项处理域 —— **扁平工具** `record_query`(工单/告警/事件…查询)。
 
-判据(v4):事项需要"自己的一条 ReAct 循环"——综合多记录(查工单→看结果→关联告警→汇总)+ 隔离
-(长列表留子上下文、只回吐摘要)。这跟 facility 同构:**同一个 `run_loop`、同一套动态逻辑**,
-查几次/查哪些/怎么综合由子模型动态决定,**非写死流水线**;只是叶子换成 record 查询。
+判据(v8 收敛):运行事项**只一个工具**(record_query),无可"组织"、返回是计数+短样本无需隔离 →
+**不够格当子 agent**(Agent-as-Tool=用组织对抗规模)。故升顶层扁平工具,主用 plan 直接编排——
+多 kind 综合(查工单+查告警+汇总)由**主**多次调用 + 汇总,不再绕子循环(去掉一层最薄、最易空转的子)。
 
-叶子 `record_query(kind, status?, time?, type?)`:按 `kind` 派发到真后端
+`record_query(kind, status?, time?, type?)`:按 `kind` 派发到真后端
 (`BackendClient.records` → proRepairApply/alarmPage/eventReport,见 backend.py)。
 """
 from __future__ import annotations
 
-from agent_loop.config import LoopBudget, LoopConfig
-from agent_loop.gate import Gate
-from agent_loop.llm import ModelCaller
-from agent_loop.subagent import make_subagent_tool
-from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult
+from agent_loop.tools import LoopTool, ToolContext, ToolResult
 
 from ..backend import BackendClient, BackendError, FakeBackendClient, RecordPage
-from ..catalog import ToolSpec
 from ..timewin import parse_time_window
 
 # 真机 9 类工单(2026-06-22):工单=总览;其余对应一个 orderType。区分巡检/装修/巡更、设备盘点/物资盘点。
 _KINDS = ("工单", "报修", "告警", "事件", "巡检", "维保", "巡更", "装修", "设备盘点", "物资盘点")
-
-# 运行管理 agent 暴露的叶子(组织,非元数据)。
-RECORDS_LEAVES = ("record_query",)
 
 
 def _format(kind: str, page: RecordPage, win_label: str = "") -> str:
@@ -106,29 +98,4 @@ def make_record_query_tool(backend: BackendClient | None = None) -> LoopTool:
         },
         handler=handler,
         is_control=False,
-    )
-
-
-def records_leaf_specs(*, backend: BackendClient | None = None) -> list[ToolSpec]:
-    """事项域叶子的 ToolSpec(进同一 ToolCatalog,统一治理)。capability_code=`record:read`。"""
-    return [ToolSpec(tool=make_record_query_tool(backend), capability_code="record:read")]
-
-
-def build_records_agent(*, model_caller: ModelCaller, leaf_registry: LoopToolRegistry,
-                        gate: Gate | None = None, assembler=None) -> LoopTool:
-    """组装事项处理子 agent(与 facility 同构:同一 `run_loop`、动态 ReAct)。leaf_registry 由组合根
-    从同一 catalog 派生;`gate` 下沉子 loop(叶子同等受 deny-first 闸查)。"""
-    cfg = LoopConfig(
-        model="chat", max_tokens=512, temperature=0.2, role="leaf",
-        toolset=list(RECORDS_LEAVES), budget=LoopBudget(max_iterations=8),
-    )
-    return make_subagent_tool(
-        name="records_agent",
-        description=(
-            "【运行管理】查询/综合工单、告警、事件。用自然语言描述要查/要理的运行事项,"
-            "如「今天的报修工单和告警」「3号楼最近的工单和告警理一下」。"
-            "需要创建报修等写操作时**登记控制提案**(返回 handle)回报主控、不自行执行。"
-        ),
-        sub_config=cfg, sub_registry=leaf_registry, model_caller=model_caller,
-        assembler=assembler, gate=gate,
     )

@@ -19,7 +19,7 @@ from agent_tools.proposal_control import ProposalControlCapability, _INVALID
 
 
 def _seed(store: ProposalStore, *, reversibility="可逆", token="utok",
-          device_id="ac-3f-2", value="24") -> str:
+          device_id="30302", value="24") -> str:
     return store.put(ControlProposal(
         target="3号楼空调", action="deviceCtrl",
         params={"deviceId": device_id, "paramValue": value, "paramTypeNo": "WD"},
@@ -37,7 +37,7 @@ def test_execute_fires_devicectrl_and_reads_back_effective():
     """读回**被控参数读数**=目标 paramValue → effective=True;后端确实收到 grounded payload。"""
     store = ProposalStore()
     backend = FakeBackendClient(device_hits=[DeviceHit(
-        device_id="ac-3f-2", name="3号楼空调", status="在线", value="5",   # 顶层 value 是聚合码
+        device_id="30302", name="3号楼空调", status="在线", value="5",   # 顶层 value 是聚合码
         readings=[("WD", "温度设定", "24")])])                            # 真读数在 readings
     cap = ProposalControlCapability(store, backend=backend, execution_mode="real")
     handle = _seed(store)
@@ -53,7 +53,7 @@ def test_readback_uses_param_readings_not_aggregate_value():
     """回归 bug:对账必须比**被控参数读数**,不能比顶层 value(聚合码)。value=5、读数WD=24 → effective=True。"""
     store = ProposalStore()
     backend = FakeBackendClient(device_hits=[DeviceHit(
-        device_id="ac-3f-2", name="x", status="在线", value="5",
+        device_id="30302", name="x", status="在线", value="5",
         readings=[("WD", "温度设定", "24"), ("temperature", "送风温度", "30")])])
     cap = ProposalControlCapability(store, backend=backend, execution_mode="real")
     _, res = _approve(cap, _seed(store))
@@ -64,7 +64,7 @@ def test_readback_setpoint_absent_is_unknown_not_false():
     """设定值型常不在读数列表(读回的是测量量)→ 诚实标 unknown(无即时读回),非冒充 True/False。"""
     store = ProposalStore()
     backend = FakeBackendClient(device_hits=[DeviceHit(
-        device_id="ac-3f-2", name="x", status="在线", value="5",
+        device_id="30302", name="x", status="在线", value="5",
         readings=[("temperature", "送风温度", "30")])])      # 无 WD 设定值读回
     cap = ProposalControlCapability(store, backend=backend, execution_mode="real")
     _, res = _approve(cap, _seed(store))
@@ -75,7 +75,7 @@ def test_accepted_but_offline_is_not_effective():
     """已受理但设备离线/读数不符 → effective=False(已受理 ≠ 已生效,对账兜住)。"""
     store = ProposalStore()
     backend = FakeBackendClient(device_hits=[DeviceHit(
-        device_id="ac-3f-2", name="3号楼空调", status="离线", value="")])
+        device_id="30302", name="3号楼空调", status="离线", value="")])
     cap = ProposalControlCapability(store, backend=backend, execution_mode="real")
 
     _, res = _approve(cap, _seed(store))
@@ -93,11 +93,27 @@ def test_backend_rejects_acceptance():
     assert "accepted=False" in res.content
 
 
+class _CtrlRaiseBackend(FakeBackendClient):
+    async def device_ctrl(self, *, payload, token=None):
+        raise BackendError("认证失败,无法访问系统资源", code="backend_code")
+
+
+def test_devicectrl_failure_is_graceful_not_crash():
+    """★真下发抛(token 失效/网络/超时)→ resolve **接住**、返回 ok=False + 真因,
+    **绝不让异常炸穿确认流**(否则前端只看到 network error、看不到真原因)。"""
+    store = ProposalStore()
+    cap = ProposalControlCapability(store, backend=_CtrlRaiseBackend(), execution_mode="real")
+    pending = cap.freeze(ToolCallReq(id="e1", name="execute_proposal", arguments={"handle": _seed(store)}))
+    res = asyncio.run(cap.resolve(pending, "approve"))
+    assert res.ok is False and "控制下发失败" in (res.error or "") and "认证失败" in (res.error or "")
+    assert cap.execute_count == 0 and len(store._store) == 0   # 失败不计执行、清提案
+
+
 # ── 幂等:无后端幂等键,harness 内账本防重发 ──────────────────────────────────
 def test_idempotent_resolve_executes_once():
     store = ProposalStore()
     backend = FakeBackendClient(device_hits=[DeviceHit(
-        device_id="ac-3f-2", name="x", status="在线", value="24.0℃")])
+        device_id="30302", name="x", status="在线", value="24.0℃")])
     cap = ProposalControlCapability(store, backend=backend, execution_mode="real")
     handle = _seed(store)
 
@@ -128,7 +144,7 @@ def test_simulated_mode_skips_devicectrl():
     """默认 simulated:确认后**不调 device_ctrl**,只读回当前态、标[模拟]未真实下发。"""
     store = ProposalStore()
     backend = FakeBackendClient(device_hits=[DeviceHit(
-        device_id="ac-3f-2", name="x", status="在线", value="5",
+        device_id="30302", name="x", status="在线", value="5",
         readings=[("WD", "温度设定", "23")])])
     cap = ProposalControlCapability(store, backend=backend)    # 默认 simulated
     _, res = _approve(cap, _seed(store))
@@ -190,7 +206,7 @@ def test_prodapi_device_ctrl_posts_payload_and_unpacks_rbool():
 
     client = ProdApiBackendClient(base_url="http://x/prod-api/project", bearer_token="svc")
     client._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-    payload = {"deviceId": "ac-3f-2", "paramTypeNo": "WD", "paramValue": "24"}
+    payload = {"deviceId": "30302", "paramTypeNo": "WD", "paramValue": "24"}
     ok = asyncio.run(client.device_ctrl(payload=payload, token="utok"))
 
     assert ok is True

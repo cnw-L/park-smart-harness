@@ -70,3 +70,23 @@ def test_gc_keeps_pending_while_awaiting_confirmation():
     store.put(ControlProposal(target="空调机组106", action="deviceCtrl", params={"deviceId": "x"}))
     n = m._gc_abandoned_proposals(_fake_res("awaiting_confirmation"))
     assert n == 0 and len(store.items()) == 1                 # 等确认的提案保住
+
+
+def test_control_flow_has_no_duplicate_confirmation_noise():
+    """回归(用户「重复确认」):控制流程对外只剩一张确认卡——
+    ① propose_control **不出** done_what 进展行(它只是 grounding 内部准备);
+    ② 模型在 execute_proposal 轮里的文本反问(请确认是否继续)**不出** say 步(卡片即唯一确认入口)。"""
+    m = _load_demo()
+    from agent_loop.messages import Message, ToolCallReq
+    # ① propose_control 不合成进展行
+    assert m._synthesize_done_what("propose_control", {"device": "空调机组106"},
+                                   "控制提案已登记(对「空调机组106」温度控制=24)", False) is None
+    # ② execute_proposal 轮的模型叙述不出 say
+    msg = Message(role="assistant", content="控制提案已登记并发起执行,请确认是否继续执行该控制指令。",
+                  tool_calls=[ToolCallReq(id="e1", name="execute_proposal", arguments={})])
+    kinds = [ev.get("kind") for ev in m._extract_internal_events(msg, "")]
+    assert "say" not in kinds and "tool_call" in kinds       # 文本反问被吞、工具调用仍在(过程可见)
+    # 对照:普通查询轮的叙述照常出 say(不误伤)
+    q = Message(role="assistant", content="正在为你查询工单。",
+                tool_calls=[ToolCallReq(id="r1", name="record_query", arguments={"kind": "工单"})])
+    assert "say" in [ev.get("kind") for ev in m._extract_internal_events(q, "")]

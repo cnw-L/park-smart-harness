@@ -7,7 +7,7 @@ from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
 from agent_loop.tools import ToolContext
 
-from agent_tools.backend import BackendError, FakeBackendClient
+from agent_tools.backend import BackendError, DeviceHit, FakeBackendClient
 from agent_tools.grounding import Grounded, Intent, Rejection, ground_control
 from agent_tools.propose import make_propose_control_tool
 from agent_tools.proposal import ProposalStore
@@ -18,7 +18,7 @@ def _be():
 
 
 def _intent(**kw):
-    base = dict(point_type_id="3700", point_type_no="KTJZ", device_id="d1",
+    base = dict(point_type_id="3700", point_type_no="KTJZ", device_id="1001",  # 数字 id(真实 deviceId 是数字)
                 param="温度设定", value="24")
     base.update(kw)
     return Intent(**base)
@@ -32,12 +32,18 @@ def _g(intent, **kw):
 def test_numeric_in_range_grounds_reversible():
     g = _g(_intent(value="24"))
     assert isinstance(g, Grounded) and g.reversibility == "可逆"
-    assert g.param_value == "24" and g.param_type_no == "WD" and g.device_id == "d1"
+    assert g.param_value == "24" and g.param_type_no == "WD" and g.device_id == "1001"
 
 
 def test_numeric_out_of_range_rejected():
     r = _g(_intent(value="80"))
     assert isinstance(r, Rejection) and r.code == "out_of_range"
+
+
+def test_non_numeric_device_id_rejected():
+    """deviceId 必须数字(payload 转 int)→ 非数字当场拒,不静默产出缺 deviceId 的残缺 payload。"""
+    r = _g(_intent(device_id="abc"))
+    assert isinstance(r, Rejection) and r.code == "bad_device_id"
 
 
 def test_enum_match_resolves_paramvalue():
@@ -103,14 +109,17 @@ def test_propose_control_is_read_only_and_grounds():
     tool = make_propose_control_tool(store, _be())
     assert tool.is_control is False                         # grounding 只读 → 可进子 agent
     res = asyncio.run(tool.handler(
-        {"point_type_id": "3700", "point_type_no": "KTJZ", "device_id": "d1",
+        {"point_type_id": "3700", "point_type_no": "KTJZ", "device_id": "1001",
          "param": "温度设定", "value": "24", "target": "3号楼空调"}, _ctx()))
     assert res.ok and "提案已登记" in res.content
     assert next(iter(store._store)) not in res.content     # handle 不进模型可见文本(execute 取最近一条)
     assert len(store._store) == 1
     p = next(iter(store._store.values()))
     assert p.action == "deviceCtrl" and p.reversibility == "可逆"
-    assert p.params.get("paramValue") == "24" and p.params.get("deviceId") == "d1"
+    # ★完整 DeviceControlEvent:deviceId 转 int + deviceIds 数组
+    assert p.params.get("paramValue") == "24" and p.params.get("deviceId") == 1001
+    assert p.params.get("deviceIds") == [1001]
+    assert p.params.get("paramStatus") == "24"             # ★模拟量:paramStatus 也填目标值(否则后端 param_exception)
     assert p.params.get("paramTypeNo") == "WD"             # 解析自字典,非模型编
 
 
@@ -138,6 +147,44 @@ def test_propose_by_name_auth_failure_is_not_blamed_on_device_name():
     assert "认证" in err or "token" in err.lower()          # 如实暴露认证/系统因
     assert "不是设备名问题" in err and "不要让用户改用更精确的设备名" in err
     assert len(store._store) == 0
+
+
+def test_propose_by_name_ambiguous_multiple_matches_blocks():
+    """★控制歧义硬闸:用户给类别名(空调机组)匹配到多台 → **拒绝、不替用户选第一台**,
+    让模型回去问用户具体哪台。控错设备是事故。"""
+    store = ProposalStore()
+    backend = FakeBackendClient(device_hits=[
+        DeviceHit(device_id="d106", name="空调机组106", status="在线", value="1",
+                  point_type_id="3700", point_type_no="KTJZ", point_id="p1"),
+        DeviceHit(device_id="d101", name="空调机组101", status="在线", value="1",
+                  point_type_id="3700", point_type_no="KTJZ", point_id="p2"),
+    ])
+    res = asyncio.run(make_propose_control_tool(store, backend).handler(
+        {"device": "空调机组", "param": "温度", "value": "24"}, _ctx()))
+    assert res.ok is False
+    err = res.error or ""
+    assert "匹配到 2 台" in err                              # 数量
+    assert "空调机组106" in err and "空调机组101" in err    # ★完整候选列给用户(不只是"例如…")
+    assert "怎么回复" in err and "设备编号" in err           # ★明确告诉用户怎么回复
+    assert len(store._store) == 0                          # 歧义 → 不登记任何提案
+
+
+def test_propose_by_exact_name_among_multiple_proceeds():
+    """精确全名命中唯一(空调机组106 在 [106,101] 里精确匹配)→ 放行,不算歧义。"""
+    store = ProposalStore()
+    backend = FakeBackendClient(device_hits=[
+        DeviceHit(device_id="106", name="空调机组106", status="在线", value="1",
+                  point_type_id="3700", point_type_no="KTJZ", point_id="p1",
+                  readings=[("WD", "温度设定", "26")]),
+        DeviceHit(device_id="101", name="空调机组101", status="在线", value="1",
+                  point_type_id="3700", point_type_no="KTJZ", point_id="p2"),
+    ])
+    res = asyncio.run(make_propose_control_tool(store, backend).handler(
+        {"device": "空调机组106", "param": "温度设定", "value": "24"}, _ctx()))
+    assert res.ok and "提案已登记" in res.content           # 唯一精确匹配 → 正常登记
+    p = next(iter(store._store.values()))
+    assert p.params.get("deviceId") == 106                  # 用的是 106 那台(int)
+    assert p.params.get("paramSubId") == "sub-wd" and p.params.get("paramType") == "1"  # 设备级字段流入
 
 
 def test_propose_by_name_not_found_asks_for_name():

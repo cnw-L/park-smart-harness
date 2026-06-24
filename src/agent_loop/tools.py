@@ -46,5 +46,7 @@ class LoopToolRegistry:
         self._tools[tool.name] = tool
     def get(self, name: str) -> LoopTool:
         return self._tools[name]
+    def __contains__(self, name: object) -> bool:
+        return name in self._tools
     def schemas(self, toolset: list[str]) -> list[dict]:
         return [self._tools[n].schema() for n in toolset if n in self._tools]

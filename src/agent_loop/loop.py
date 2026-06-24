@@ -340,6 +340,15 @@ async def run_loop(
 
             # ── 第一遍:逐 call 过闸(分类);deny/ask 立即同步处理,allow 收集待并发 ──
             for i, call in enumerate(turn.tool_calls):
+                if call.name not in registry:
+                    # 模型(qwen)偶发幻觉工具名(实测:facility 子 agent 里喊主 loop 才有的 plan)
+                    # → 合成**可恢复**错误让模型自纠;绝不让 registry.get 的 KeyError 炸穿循环/子 agent。
+                    results[i] = Message(
+                        role="tool", name=call.name, tool_call_id=call.id, is_error=True,
+                        content=f"[error] 未知工具「{call.name}」——本轮没有这个工具,请改用已提供的工具",
+                    )
+                    failures += 1
+                    continue
                 tool = registry.get(call.name)
                 verdict = gate.classify(call, tool, ctx)
 

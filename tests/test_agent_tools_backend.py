@@ -66,16 +66,52 @@ def test_prodapi_builds_getdevicepage_request_and_parses():
 
     client = ProdApiBackendClient(base_url="http://x/prod-api/project", bearer_token="svc")
     client._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-    hits = asyncio.run(client.device_status(name="空调", token="utok"))
+    hits = asyncio.run(client.device_status(name="空调机组106", token="utok"))   # 具体类型词 → 按名过滤
 
     assert captured["url"].endswith("/common/device/getDevicePage")     # 指南§三.1 端点
-    assert captured["body"] == {"pageNum": 1, "pageSize": 10,            # systemNo 必带(否则后端拒)
-                                "data": {"systemNo": "kt", "deviceName": "空调"}}
+    assert captured["body"] == {"pageNum": 1, "pageSize": 200,           # 一律大页(否则枚举/伞词被截到10台漏计)
+                                "data": {"systemNo": "kt", "deviceName": "空调机组106"}}
     assert captured["auth"] == "Bearer utok"                            # 按用户 token(身份脊柱透传)
     assert len(hits) == 1
     h = hits[0]
     assert h.device_id == "123" and h.name == "3号楼空调" and h.value == "26.0"
     assert h.point_type_no == "KTJZ" and h.region == "3号楼"
+
+
+def test_prodapi_umbrella_term_queries_whole_system_no_filter():
+    """★伞词(空调/电梯…=系统名,不在设备名里)→ 查整个系统、**不带 deviceName 过滤**,跨类型都拿到
+    (旧 bug:"空调"子串只命中"空调机组"、"电梯"零命中)。具体类型词仍按名过滤(见上一测)。"""
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"code": 0, "data": {"list": [
+            {"deviceId": 1, "deviceName": "空调机组101", "pointTypeName": "空调机组", "status": "在线"},
+            {"deviceId": 2, "deviceName": "新风机组201", "pointTypeName": "新风机组", "status": "在线"},
+            {"deviceId": 3, "deviceName": "风机盘管301", "pointTypeName": "风机盘管", "status": "在线"}]}})
+
+    c = ProdApiBackendClient(base_url="http://x/prod-api/project", bearer_token="t")
+    c._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    hits = asyncio.run(c.device_status(name="空调"))                    # 伞词
+
+    assert "deviceName" not in captured["body"]["data"]                 # ★不按名字过滤
+    assert captured["body"]["data"]["systemNo"] == "kt"                 # 仍定位到空调系统
+    assert {h.point_type_name for h in hits} == {"空调机组", "新风机组", "风机盘管"}   # 跨3类型都拿到
+
+
+def test_prodapi_region_filter_separator_insensitive():
+    """★区域匹配忽略分隔符:用户「南区2号楼」要命中真实「南区_2号楼_9F_展厅」(否则下划线导致恒0命中)。"""
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"code": 0, "data": {"list": [
+            {"deviceId": 1, "deviceName": "空调机组101", "pointTypeName": "空调机组",
+             "status": "在线", "regionName": "南区_2号楼_9F_展厅"},
+            {"deviceId": 2, "deviceName": "空调机组201", "pointTypeName": "空调机组",
+             "status": "在线", "regionName": "北区_1号楼_3F"}]}})
+
+    c = ProdApiBackendClient(base_url="http://x/prod-api/project", bearer_token="t")
+    c._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    hits = asyncio.run(c.device_status(name="空调机组", region="南区2号楼"))   # 用户原话(无下划线)
+    assert len(hits) == 1 and hits[0].device_id == "1"                       # 命中带下划线的真实区域
 
 
 def test_prodapi_backend_code_error_raises():

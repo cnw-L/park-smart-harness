@@ -1,7 +1,7 @@
 """智慧园区 · 三环 harness Web Demo(治理工具子系统串联演示)
 
 真 qwen@6008 驱动 agent_loop 内圈 + agent_tools 治理子系统(`build_park_runtime` 一处串联)。
-四条演示主线:① 子 agent ReAct 委派(设备管理/运行管理) ② 控制确认红线(propose→execute→人工确认→deviceCtrl+读回)
+四条演示主线:① 子 agent ReAct 委派(设备管理 facility_agent) ② 控制确认红线(propose→execute→人工确认→deviceCtrl+读回)
 ③ 权限治理(deny-first ToolLoader:换身份→可见工具集随权限收缩) ④ 知识检索(harness_rag/Fake,带引用、证据不足不臆造)。
 
 运行:
@@ -10,8 +10,8 @@
 
 架构:
   - FastAPI + uvicorn,单 demo session(asyncio.Lock 序列化请求)
-  - 工具(治理子系统顶层 7):设备管理 facility_agent / 运行管理 records_agent /
-    生活服务 meeting·parking·restaurant_query / 知识检索 knowledge_query / 执行工具 execute_proposal(+ 引擎 plan 元工具)
+  - 工具(治理子系统顶层 8):设备管理 facility_agent(子) / 运行查询 record_query(扁平) /
+    生活服务 meeting·parking·restaurant_query / 知识检索 knowledge_query / 执行 propose_control·execute_proposal(+ 引擎 plan 元工具)
   - execute_proposal 调用 → gate 判 ask → status=awaiting_confirmation + pending → 前端确认卡 → /api/confirm
   - 身份(/api/identity)固定几个 persona(真实部署来自登录解析);rt.toolset_for 按权限过滤顶层(可见性=减选择)
   - 对外显式:plan 侧边栏(状态徽章) + done_what 进展行 + 控制确认卡 + 最终回答
@@ -24,6 +24,7 @@ import json
 import os
 import re
 import sys
+import time
 from dataclasses import replace
 
 # 让脚本能 import agent_loop
@@ -91,9 +92,11 @@ def _build_retriever():
         return None                       # 缺 harness_rag 依赖 → Fake(离线 demo 仍可跑)
 
 
-# 控制执行模式:默认 simulated(不真下发 deviceCtrl,符合内圈定稿 §八硬依赖:后端无 commandId/幂等
-# 前不可逆控制不能上线)。HARNESS_CONTROL_EXECUTION=real 才真发(后端幂等就绪后)。
-_CONTROL_MODE = "real" if os.getenv("HARNESS_CONTROL_EXECUTION") == "real" else "simulated"
+# 控制执行模式:**默认 real**——deviceCtrl 接口真实存在(/common/device/deviceCtrl),对齐生产
+# (agent_runtime 设备控制即真下发),**已有接口不用 simulated 假数据**。真下发只经人工确认卡
+# (execute_proposal→ask→/api/confirm,红线:绝不自动批准)+ 读回对账。
+# HARNESS_CONTROL_EXECUTION=simulated 可显式退回模拟(无后端/纯演示时用)。
+_CONTROL_MODE = "simulated" if os.getenv("HARNESS_CONTROL_EXECUTION") == "simulated" else "real"
 
 
 def _build_runtime() -> ParkToolRuntime:
@@ -176,10 +179,10 @@ def _make_cfg(principal: Principal) -> LoopConfig:
 
 # 顶层工具中文标签(身份面板/确认卡用)
 _TOOL_LABEL = {
-    "facility_agent": "设备管理", "records_agent": "运行管理",
+    "facility_agent": "设备管理", "record_query": "运行查询",
     "meeting_query": "会议室查询", "parking_query": "车位查询",
     "restaurant_query": "餐厅查询", "knowledge_query": "知识检索",
-    "execute_proposal": "执行工具·控制",
+    "propose_control": "控制提案", "execute_proposal": "执行工具·控制",
 }
 
 
@@ -268,7 +271,7 @@ def _strip_step_prefixes(text: str) -> str:
 # 治理子系统顶层工具 → 对外进展行的友好前缀(子 agent 的内部 ReAct 由设计封装,主流只见委派+回吐摘要)
 _DONE_WHAT_LABEL = {
     "facility_agent": "设备管理",
-    "records_agent": "运行管理",
+    "record_query": "运行查询",
     "meeting_query": "会议室",
     "parking_query": "车位",
     "restaurant_query": "餐厅",
@@ -287,6 +290,9 @@ def _synthesize_done_what(tool_name: str, args: dict, result_text: str, is_error
     """
     if tool_name == "plan":
         return None                              # plan 走侧边栏,不在对话区出进展行
+    if tool_name == "propose_control":
+        return None                              # 控制提案=grounding 内部准备;对外只呈现**确认卡**,
+                                                 # 不出"提案已登记"进展行(否则与卡片重复=用户感知的"重复确认")
     # 执行工具:经确认卡 → resolve 后写回的控制结果(content 带 [executed]/[rejected] 标记)
     if tool_name == "execute_proposal" or result_text.startswith(("[executed]", "[rejected]")):
         if is_error:
@@ -298,10 +304,10 @@ def _synthesize_done_what(tool_name: str, args: dict, result_text: str, is_error
             tail = result_text.split("readback=", 1)[-1].strip() if "readback=" in result_text else ""
             return f"✓ 控制已下发并读回对账{('('+_shorten(tail, 60)+')') if tail else ''}"
         return "✓ 控制已执行"
-    # 设备管理/运行管理子助手:只回吐摘要(内部多步 ReAct 由子循环封装)
+    # facility_agent=子助手(委派+回吐摘要);其余(record_query/生活/知识)=主直接查询
     label = _DONE_WHAT_LABEL.get(tool_name)
     if label:
-        verb = "委派" if tool_name in ("facility_agent", "records_agent") else "查询"
+        verb = "委派" if tool_name == "facility_agent" else "查询"
         if is_error:
             return f"✗ {label}{verb}未完成:{_shorten(result_text, 50)}"
         return f"✓ {label}:{_shorten(result_text)}"
@@ -399,7 +405,10 @@ def _extract_internal_events(m, final_stripped: str) -> list[dict]:
         if m.content and m.content.strip():
             # 模型的叙述内容(第一步/第二步/汇总…)→ 对内隐式
             # 若内容就是最终回答,不再重复放入 process
-            if m.content.strip() != final_stripped:
+            # ★控制挂起轮:模型常在文本里复述"已弹确认卡·请确认是否继续"——与**确认卡按钮**重复
+            #   (用户感知的"重复确认")→ 该轮的 say 不出,卡片即唯一确认入口。
+            calls_control = any(tc.name == "execute_proposal" for tc in m.tool_calls)
+            if m.content.strip() != final_stripped and not calls_control:
                 events.append({"event": "process", "kind": "say", "text": m.content.strip()})
         for tc in m.tool_calls:
             events.append({
@@ -488,6 +497,13 @@ async def _stream_run(
     # pending_tool_calls: tool_call_id -> {name, args} 供合成 done_what
     pending_tool_calls: dict[str, dict] = {}
 
+    # ── 运行计时:每个事件打上自本轮开始的累计毫秒(前端显示步耗时 + 总耗时) ──
+    t0 = time.monotonic()
+
+    def stamp(obj: dict) -> dict:
+        obj["t_ms"] = int((time.monotonic() - t0) * 1000)
+        return obj
+
     async def flush_new_messages(cur_messages, final_stripped: str):
         nonlocal seen, pending_tool_calls
         lines = []
@@ -525,11 +541,11 @@ async def _stream_run(
 
                     dw = _synthesize_done_what(tool_name, args, content, m.is_error)
                     if dw:
-                        lines.append(_ndjson({"event": "done_what", "text": dw}))
+                        lines.append(_ndjson(stamp({"event": "done_what", "text": dw})))
 
             # 内部过程事件(对内隐式)
             for ev in _extract_internal_events(m, final_stripped):
-                lines.append(_ndjson(ev))
+                lines.append(_ndjson(stamp(ev)))
 
             seen += 1
         return lines
@@ -553,7 +569,7 @@ async def _stream_run(
             payload, plan_sig = _project_plan(cur.messages, cur.plan.items, completed=False)
             if plan_sig != last_plan_sig:
                 last_plan_sig = plan_sig
-                yield _ndjson({"event": "plan", "items": payload})
+                yield _ndjson(stamp({"event": "plan", "items": payload}))
 
     # ── task 完成后处理尾部 ──────────────────────────────────────────────────
     res = await task  # 拿结果(task 已完成,不阻塞)
@@ -602,17 +618,17 @@ async def _stream_run(
                 "args": p.frozen_action["arguments"],
             })
         if pending_list:
-            yield _ndjson({"event": "pending", "items": pending_list})
+            yield _ndjson(stamp({"event": "pending", "items": pending_list}))
     _gc_abandoned_proposals(res)        # 终态清掉放弃的提案(awaiting 时自身跳过);防跨轮误取陈旧提案
 
     # 最终回答气泡(对外显式,干净)
     if answer:
-        yield _ndjson({"event": "answer", "text": answer})
+        yield _ndjson(stamp({"event": "answer", "text": answer}))
 
-    # done 信号
-    yield _ndjson({"event": "done",
-                   "status": res.status,
-                   "reason": res.reason or ""})
+    # done 信号(t_ms = 本轮总耗时)
+    yield _ndjson(stamp({"event": "done",
+                         "status": res.status,
+                         "reason": res.reason or ""}))
 
 
 # ── FastAPI 应用 ──────────────────────────────────────────────────────────────
@@ -1203,6 +1219,31 @@ _HTML = """<!DOCTYPE html>
     color: var(--accent2);
     padding: 4px 0;
   }
+  .run-timer {
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 1px 7px;
+    font-size: 11px;
+  }
+  .trace-t {
+    float: right;
+    margin-left: 8px;
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+    color: var(--muted);
+    opacity: 0.75;
+  }
+  .run-total {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    padding: 2px 0 6px;
+  }
   /* 身份切换(header 右) */
   .identity-switch { display: flex; gap: 6px; align-items: center; }
   .identity-switch .persona-btn {
@@ -1273,7 +1314,7 @@ _HTML = """<!DOCTYPE html>
   <div class="dot"></div>
   <div style="flex:1;">
     <h1>智慧园区 · 治理工具子系统 Demo</h1>
-    <p>真 qwen@6008 · 设备管理 / 运行管理 / 生活服务 / 知识检索 / 执行工具(控制·需确认) · deny-first 按身份过滤</p>
+    <p>真 qwen@6008 · 设备管理 / 运行查询 / 生活服务 / 知识检索 / 执行工具(控制·需确认) · deny-first 按身份过滤</p>
   </div>
   <div class="identity-switch" id="identitySwitch"></div>
 </div>
@@ -1289,7 +1330,7 @@ _HTML = """<!DOCTYPE html>
 
     <div class="examples">
       <span class="chip" onclick="sendChip('查一下空调机组的运行状态和健康度')">设备管理·查空调状态+健康度</span>
-      <span class="chip" onclick="sendChip('今天的工单和告警帮我理一下')">运行管理·工单+告警</span>
+      <span class="chip" onclick="sendChip('今天的工单和告警帮我理一下')">运行查询·工单+告警</span>
       <span class="chip" onclick="sendChip('园区消防应急预案是怎么规定的?')">知识检索·消防应急预案</span>
       <span class="chip" onclick="sendChip('附近有什么餐厅?')">生活服务·餐厅</span>
       <span class="chip" onclick="sendChip('把空调机组的温度调到24度')">执行工具·调温(需确认)</span>
@@ -1335,6 +1376,13 @@ const tokenStatusEl = document.getElementById('tokenStatus');
 let loading = false;
 let currentPersona = null;
 let controlMode = 'simulated';                 // 控制执行模式(/api/state 注入);默认不真下发
+let runTimerHandle = null;                     // 运行计时器 interval 句柄
+let lastEventMs = 0;                           // 上一个事件的 t_ms(算步间隔)
+
+function fmtMs(ms) {                            // 毫秒 → 人话(320ms / 2.3s)
+  if (ms == null || isNaN(ms)) return '';
+  return ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(1) + 's';
+}
 
 // ── 身份治理面板:persona 切换 + 可见工具(rt.toolset_for 实算) ─────────────────
 const CONTROL_TOOLS = new Set(['execute_proposal']);
@@ -1599,17 +1647,20 @@ function handleStreamEvent(ev, block) {
     }
     case 'answer': {
       if (ev.text && ev.text.trim()) {
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble assistant';
-        bubble.textContent = ev.text.trim();
-        messagesEl.appendChild(bubble);
-        scrollBottom();
+        typewriterBubble(ev.text.trim());     // 逐字显现(流式感)
       }
       break;
     }
     case 'done': {
+      stopRunTimer();
       const ind = document.getElementById('runningIndicator');
       if (ind) ind.remove();
+      if (ev.t_ms != null) {                  // 本次总耗时(对外显式)
+        const tt = document.createElement('div');
+        tt.className = 'run-total';
+        tt.textContent = '⏱ 本次耗时 ' + fmtMs(ev.t_ms);
+        messagesEl.appendChild(tt);
+      }
       if (ev.status && ev.status !== 'completed') {
         const badge = document.createElement('span');
         badge.className = 'status-badge ' + statusClass(ev.status);
@@ -1639,6 +1690,7 @@ async function sendMessage() {
   } catch(err) {
     appendError('请求失败:' + err.message);
   } finally {
+    stopRunTimer();
     indicator.remove();
     setLoading(false);
     scrollBottom();
@@ -1674,10 +1726,37 @@ function appendRunningIndicator() {
   const d = document.createElement('div');
   d.className = 'running-indicator';
   d.id = 'runningIndicator';
-  d.innerHTML = '<div class="spinner"></div><span>运行中…</span>';
+  d.innerHTML = '<div class="spinner"></div><span>运行中</span><span class="run-timer" id="runTimer">0.0s</span>';
   messagesEl.appendChild(d);
+  // 实时秒表:每 100ms 刷新累计耗时(qwen 单步可达数十秒,让用户看见在跑、跑了多久)
+  const start = performance.now();
+  lastEventMs = 0;
+  if (runTimerHandle) clearInterval(runTimerHandle);
+  runTimerHandle = setInterval(() => {
+    const t = document.getElementById('runTimer');
+    if (t) t.textContent = ((performance.now() - start) / 1000).toFixed(1) + 's';
+  }, 100);
   scrollBottom();
   return d;
+}
+
+function stopRunTimer() {
+  if (runTimerHandle) { clearInterval(runTimerHandle); runTimerHandle = null; }
+}
+
+function typewriterBubble(text) {
+  // 最终答案逐字显现:模型调用本身不流式(qwen 整段返回),前端做打字机效果给"流式输出"观感。
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble assistant';
+  messagesEl.appendChild(bubble);
+  const step = Math.max(1, Math.round(text.length / 100));   // ~100 帧内显现完
+  let i = 0;
+  const iv = setInterval(() => {
+    i += step;
+    bubble.textContent = text.slice(0, i);
+    scrollBottom();
+    if (i >= text.length) { clearInterval(iv); bubble.textContent = text; }
+  }, 16);
 }
 
 function appendError(msg) {
@@ -1708,6 +1787,15 @@ function buildProcessItem(item) {
     el.textContent = '拦截 ' + item.text;
   } else {
     return null;
+  }
+  // 步耗时徽章(右侧):本步累计耗时 @X.Xs + 距上一步的增量(+Y.Ys),让慢在哪一步一目了然
+  if (item.t_ms != null) {
+    const delta = item.t_ms - lastEventMs;
+    lastEventMs = item.t_ms;
+    const t = document.createElement('span');
+    t.className = 'trace-t';
+    t.textContent = '@' + fmtMs(item.t_ms) + (delta > 50 ? ' +' + fmtMs(delta) : '');
+    el.appendChild(t);
   }
   return el;
 }
@@ -1836,4 +1924,4 @@ loadState();
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8030)
+    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("DEMO_PORT", "8030")))

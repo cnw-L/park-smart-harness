@@ -15,7 +15,8 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
 
 import httpx
@@ -74,6 +75,10 @@ class ParamType:
     param_statuses: list[dict[str, Any]] = field(default_factory=list)  # ★枚举:[{status,paramValue,isAble}]
     param_type_id: str = ""
     point_type_id: str = ""
+    param_type: str = ""                                  # ★paramType:1=模拟量 2=数字量(deviceCtrl 必带)
+    param_sub_id: str = ""                                # ★paramSubId(deviceCtrl 透传)
+    current_value: str = ""                               # ★该设备当前值(仅 getListByPointId 设备级有)
+    decimal_places: str = ""                              # 小数位(模拟量精度)
     raw: dict[str, Any] = field(default_factory=dict)
 
 
@@ -154,6 +159,20 @@ _DEFAULT_SYSTEM_BY_TYPE: dict[str, str] = {
     "冷量表": "ll", "冷量": "ll", "能耗": "ll",
 }
 
+# ★系统**伞词**:这些词是「系统名/类目」,**不出现在具体设备名里**(空调系统的设备叫"空调机组X/
+# 新风机组X/风机盘管X";电梯系统的设备叫"垂梯X/扶梯X")。用它们按 deviceName 子串过滤会错:
+#   "空调"→只命中"空调机组*"(漏新风机组/风机盘管);"电梯"→一台都匹配不到。
+# 故伞词查询 = **查整个系统、不按名字过滤**,由格式化层按真实 pointTypeName 分组。
+# (具体类型词"空调机组/垂梯/风机盘管"仍按 deviceName 子串过滤——它们就是设备名前缀。)
+_SYSTEM_UMBRELLA: frozenset[str] = frozenset({
+    "空调", "电梯", "照明", "监控", "停车", "排水", "给水",
+})
+
+
+def _norm_sep(s: str) -> str:
+    """去掉分隔符(下划线/连字符/空格)做区域匹配——用户"南区2号楼"对真实"南区_2号楼_9F"。"""
+    return re.sub(r"[_\-\s]+", "", s or "")
+
 
 # 事项 kind → 后端工单类型码(getOrderTypeStatistics 的 orderType)。"工单"是总览,单列处理。
 # 真机实测全 9 类(2026-06-22):repair/alarm/maintenance/inspect/inventory/patrol/goods/event/fitment。
@@ -190,6 +209,9 @@ class BackendClient(Protocol):
 
     async def point_param_types(self, *, point_type_id: str, is_ctrl: bool = True,
                                 token: str | None = None) -> list[ParamType]: ...
+
+    async def point_param_by_point_id(self, *, point_id: str, point_type_id: str = "",
+                                      is_ctrl: bool = True, token: str | None = None) -> list[ParamType]: ...
 
     async def device_ctrl(self, *, payload: dict[str, Any],
                           token: str | None = None) -> bool: ...
@@ -254,6 +276,21 @@ class FakeBackendClient:
             ParamType(param_type_no="RO", param_type_name="只读量", is_ctrl=False,
                       point_type_id=str(point_type_id)),
         ]
+
+    async def point_param_by_point_id(self, *, point_id, point_type_id="", is_ctrl=True, token=None) -> list[ParamType]:
+        # 设备级:同类型字典 + 给模拟量补 paramType=1 + currentValue(getListByPointId 才有的设备级字段)
+        params = await self.point_param_types(point_type_id=point_type_id or "fake-pt", is_ctrl=is_ctrl, token=token)
+        if self._params is not None:
+            return params
+        out = []
+        for p in params:
+            if p.param_type_no == "WD":
+                out.append(replace(p, param_type="1", current_value="26", param_sub_id="sub-wd"))
+            elif p.param_type_no == "KG":
+                out.append(replace(p, param_type="2"))
+            else:
+                out.append(p)
+        return out
 
     async def device_ctrl(self, *, payload, token=None) -> bool:
         self.ctrl_calls.append(dict(payload))          # 记录、不触网
@@ -362,6 +399,9 @@ class ProdApiBackendClient:
                             system_no: str | None = None, token: str | None = None) -> list[DeviceHit]:
         # POST /common/device/getDevicePage —— systemNo 必带(空则后端报错)。
         primary = system_no or self._resolve_system_no(name)
+        # ★伞词(空调/电梯/…=系统名)→ 查整个系统、不按名字过滤(否则漏类型/零命中);类型词照常过滤。
+        if name and not system_no and name in _SYSTEM_UMBRELLA:
+            return await self._device_page(primary, None, region, token)
         hits = await self._device_page(primary, name, region, token)
         # 名字/区域给了但首选系统空 → 跨其它已配系统找(未映射类型/跨系统;区域查也常跨系统)。
         # 命中 / 无任何过滤(列全部)/ 显式 systemNo → 不回退。
@@ -382,13 +422,18 @@ class ProdApiBackendClient:
             data_filter["deviceName"] = name
         # 区域无服务端过滤字段(getDevicePage 只认 regionId)→ 多取后按**接口实时 regionName** 客户端过滤
         # (不建静态区域索引:regionName 每次来自实时接口)。
-        page_size = 200 if region else 10
+        # ★page_size 一律 200:枚举/伞词查询(如"园区有哪些电梯")真实可达 35 台,旧 no-region=10
+        #   会截断到 10 台、却被如实计数报成"共10台"(漏 25 台)。deviceName 在服务端过滤,大页无害。
+        page_size = 200
         data = await self._post("/common/device/getDevicePage",
                                 {"pageNum": 1, "pageSize": page_size, "data": data_filter}, token)
         rows = data.get("list") or data.get("records") or []
         hits = [self._to_hit(r) for r in rows if isinstance(r, dict)]
         if region:
-            hits = [h for h in hits if region in (h.region or "")]
+            # ★分隔符无关匹配:用户打"南区2号楼",真实 regionName 是"南区_2号楼_9F_展厅"——
+            #   去掉下划线/连字符/空格再子串比对,否则"南区2号楼"恒 0 命中(真机踩坑)。
+            rq = _norm_sep(region)
+            hits = [h for h in hits if rq in _norm_sep(h.region or "")]
         return hits
 
     def _candidate_systems(self) -> list[str]:
@@ -413,11 +458,27 @@ class ProdApiBackendClient:
 
     async def point_param_types(self, *, point_type_id: str, is_ctrl: bool = True,
                                 token: str | None = None) -> list[ParamType]:
-        # POST /syc/sycPointParamType/page —— 控制参数字典(isCtrl/范围/枚举)
+        # POST /syc/sycPointParamType/page —— 类型级控制参数字典(按 pointTypeId;无 currentValue)
         body = {"pageNum": 1, "pageSize": 50,
                 "data": {"pointTypeId": point_type_id, "isCtrl": is_ctrl}}
         data = await self._post("/syc/sycPointParamType/page", body, token)
         rows = data.get("list") or data.get("records") or []
+        return [self._to_param(r) for r in rows if isinstance(r, dict)]
+
+    async def point_param_by_point_id(self, *, point_id: str, point_type_id: str = "",
+                                      is_ctrl: bool = True, token: str | None = None) -> list[ParamType]:
+        # POST /syc/sycPointParamType/getListByPointId —— **设备级权威控制发现**(带 currentValue +
+        # 该设备模拟量边界 + 数字量枚举)。★实测:**必须 pointId + pointTypeId(int)一起传**才返参数,
+        # 只给 pointId 返空(踩坑点)。
+        body: dict[str, Any] = {"pointId": point_id, "isCtrl": is_ctrl, "isShow": "Y"}
+        try:
+            if point_type_id:
+                body["pointTypeId"] = int(str(point_type_id).strip())
+        except (TypeError, ValueError):
+            pass
+        data = await self._post_data("/syc/sycPointParamType/getListByPointId", body, token)  # data 是 list
+        rows = data if isinstance(data, list) else (
+            (data.get("list") or data.get("records") or []) if isinstance(data, dict) else [])
         return [self._to_param(r) for r in rows if isinstance(r, dict)]
 
     @staticmethod
@@ -430,7 +491,9 @@ class ProdApiBackendClient:
             is_ctrl=bool(r.get("isCtrl")), input_type=s("inputType"), unit=s("unit"),
             min_value=s("minValue"), max_value=s("maxValue"),
             param_statuses=[x for x in (r.get("paramStatuses") or []) if isinstance(x, dict)],
-            param_type_id=s("paramTypeId"), point_type_id=s("pointTypeId"), raw=r,
+            param_type_id=s("paramTypeId"), point_type_id=s("pointTypeId"),
+            param_type=s("paramType"), param_sub_id=s("paramSubId"),
+            current_value=s("currentValue"), decimal_places=s("decimalPlaces"), raw=r,
         )
 
     async def device_ctrl(self, *, payload: dict[str, Any], token: str | None = None) -> bool:
@@ -609,12 +672,16 @@ class ProdApiBackendClient:
         return payload.get("data")
 
     async def _post(self, path: str, body: dict[str, Any], token: str | None) -> dict[str, Any]:
+        data = await self._post_data(path, body, token)
+        return data if isinstance(data, dict) else {}
+
+    async def _post_data(self, path: str, body: dict[str, Any], token: str | None) -> Any:
+        """同 _post 但返回 _parse 的原始 data(可为 list/bool,如 getListByPointId 返 list)。"""
         try:
             resp = await self._client.post(f"{self._base}{path}", json=body, headers=self._headers(token))
         except httpx.HTTPError as exc:
             raise BackendError(f"prod-api 请求失败: {exc}", code="request_failed") from exc
-        data = self._parse(resp)
-        return data if isinstance(data, dict) else {}
+        return self._parse(resp)
 
     async def _post_list(self, path: str, body: dict[str, Any], token: str | None) -> list[Any]:
         """data 是裸列表的端点(如 faultPointType)用这个;非列表降级成空表。"""

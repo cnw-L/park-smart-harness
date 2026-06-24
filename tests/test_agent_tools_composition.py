@@ -29,7 +29,7 @@ def test_top_level_is_eight_entries():
     schemas = sub.registry.schemas(sub.toolset)
     assert len(schemas) == 8                                   # 7 域 + propose_control 多归属升顶层
     names = {s["function"]["name"] for s in schemas}
-    assert {"facility_agent", "records_agent", "propose_control", "execute_proposal"} <= names
+    assert {"facility_agent", "record_query", "propose_control", "execute_proposal"} <= names
 
 
 def test_control_shares_the_singleton_store():
@@ -64,7 +64,7 @@ def test_facility_proposal_resolvable_by_parent_control():
 
     sub = build_tool_subsystem(model_caller=_Relay([
         ModelTurn(content="", tool_calls=[ToolCallReq(id="p1", name="propose_control",
-            arguments={"target": "3号楼空调", "point_type_id": "3700", "device_id": "ac-3f-2",
+            arguments={"target": "3号楼空调", "point_type_id": "3700", "device_id": "30302",
                        "param": "温度设定", "value": "24"})]),
     ]))
     facility = sub.registry.get("facility_agent")

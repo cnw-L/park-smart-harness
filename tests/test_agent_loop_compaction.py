@@ -60,7 +60,7 @@ def test_compaction_fires_on_long_request():
     conv = _long_conv()
     res = _run(conv, FakeModelCaller([ModelTurn(content="最终答案")]),
                ConversationCompactor(FakeSummarizer("【摘要】中段已压"),
-                                     hard_token_cap=600, tail_token_budget=20, keep_first=1))
+                                     hard_token_cap=800, tail_token_budget=20, keep_first=1))
     assert res.status == "completed" and res.final == "最终答案"
     # 提交了 __compaction__ 对(压缩发生)
     assert any(m.role == "tool" and m.name == "__compaction__" for m in conv.messages)
@@ -77,7 +77,7 @@ def test_compaction_charges_budget():
         FakeModelCaller([ModelTurn(content="最终答案")]), store=InMemoryConversationStore(),
         assembler=ParkContextAssembler(),
         compaction=ConversationCompactor(FakeSummarizer("【摘要】中段已压"),
-                                         hard_token_cap=600, tail_token_budget=20, keep_first=1)))
+                                         hard_token_cap=800, tail_token_budget=20, keep_first=1)))
     assert res.status == "completed"
     assert budget.snapshot()["iters"] >= 2        # 压缩没"白嫖"预算
 
@@ -98,7 +98,7 @@ def test_compaction_thrash_guard():
     conv = _long_conv()
     res = _run(conv, FakeModelCaller([ModelTurn(content="答")]),
                ConversationCompactor(FakeSummarizer("巨" * 3000),   # 摘要巨大,缩不下来
-                                     hard_token_cap=600, tail_token_budget=20, keep_first=1))
+                                     hard_token_cap=800, tail_token_budget=20, keep_first=1))
     assert res.status == "failed" and res.reason == "compaction_thrash"
 
 

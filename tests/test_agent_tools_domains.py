@@ -1,4 +1,4 @@
-"""Phase 3:域叶子 + record_query facade + facility 子 agent(首证跨界 handle 路径 R1)。"""
+"""Phase 3:域叶子 + record_query 扁平工具 + facility 子 agent(首证跨界 handle 路径 R1)。"""
 from __future__ import annotations
 
 import asyncio
@@ -16,8 +16,7 @@ from agent_tools.domains.facility import (FACILITY_LEAVES, build_facility_agent,
 from agent_tools.domains.knowledge import make_knowledge_query_tool
 from agent_tools.domains.life import (make_meeting_query_tool, make_parking_query_tool,
                                       make_restaurant_query_tool)
-from agent_tools.domains.records import (RECORDS_LEAVES, build_records_agent,
-                                         make_record_query_tool, records_leaf_specs)
+from agent_tools.domains.records import make_record_query_tool
 from agent_tools.proposal import ProposalStore
 
 
@@ -78,19 +77,11 @@ def test_record_query_exposes_status_distribution():
     assert r.ok and "按状态" in r.content and "待调度" in r.content and "已完成" in r.content
 
 
-def test_records_agent_dynamic_multi_query_and_summarizes():
-    """事项 agent = 同一 run_loop 动态 ReAct:子里动态查工单+告警(非写死序列),只回吐摘要给主。"""
-    cat = ToolCatalog()
-    for s in records_leaf_specs():
-        cat.register(s)
-    agent = build_records_agent(model_caller=_RelayModel([
-        ModelTurn(content="", tool_calls=[ToolCallReq(
-            id="r1", name="record_query", arguments={"kind": "工单"})]),
-        ModelTurn(content="", tool_calls=[ToolCallReq(
-            id="r2", name="record_query", arguments={"kind": "告警"})]),
-    ]), leaf_registry=cat.to_registry(list(RECORDS_LEAVES)))
-    res = asyncio.run(agent.handler({"task": "今天的工单和告警理一下"}, _ctx()))
-    assert res.ok and ("工单" in res.content or "告警" in res.content)   # 综合后回吐摘要
+def test_record_query_flat_returns_kind_data():
+    """v8:record_query 是**扁平工具**(非子 agent)——单次调用返回该 kind 计数/分布;
+    多 kind 综合(工单+告警)由**主** plan 编排多次调用,不再绕子循环。"""
+    r = asyncio.run(make_record_query_tool().handler({"kind": "工单"}, _ctx()))
+    assert r.ok and "工单" in r.content
 
 
 def test_record_query_unknown_kind_is_business_error():
@@ -102,13 +93,13 @@ def test_record_query_is_read_only():
     assert make_record_query_tool().is_control is False
 
 
-# ── 生活服务扁平(桩,后端无接口)──────────────────────────────────────────────
+# ── 生活服务扁平(后端无接口 → 保留演练数据,强标记声明是演示)──────────────────
 def test_life_service_flat_tools():
     mr = asyncio.run(make_meeting_query_tool().handler({"time": "明天"}, _ctx()))
-    assert mr.ok and "会议室" in mr.content
+    assert mr.ok and "会议室" in mr.content and "演示数据" in mr.content   # 无接口工具保留演练数据
     assert "车位" in asyncio.run(make_parking_query_tool().handler({}, _ctx())).content
     rr = asyncio.run(make_restaurant_query_tool().handler({}, _ctx()))
-    assert rr.ok and "餐厅" in rr.content                  # knowledge 有专测 test_agent_tools_knowledge,此处不重复
+    assert rr.ok and "餐厅" in rr.content
 
 
 # ── 设备管理叶子:device_health / energy(调 backend + 格式化 + 错误路径)─────────
@@ -153,7 +144,7 @@ def test_facility_agent_proposes_into_shared_store_without_leaking_handle():
         ModelTurn(content="", tool_calls=[ToolCallReq(
             id="p1", name="propose_control",
             arguments={"target": "3号楼空调", "point_type_id": "3700", "point_type_no": "KTJZ",
-                       "device_id": "ac-3f-2", "param": "温度设定", "value": "24"})]),
+                       "device_id": "30302", "param": "温度设定", "value": "24"})]),
     ]), store)
 
     res = asyncio.run(facility.handler({"task": "查3号楼空调温度,太热就提案调到24度"}, _ctx()))

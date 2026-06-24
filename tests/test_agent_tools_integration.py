@@ -45,7 +45,7 @@ class _SubRelay:
                 id="d1", name="device_status", arguments={"device": "3号楼空调"})]),
             ModelTurn(content="", tool_calls=[ToolCallReq(
                 id="p1", name="propose_control",
-                arguments={"target": "3号楼空调", "point_type_id": "3700", "device_id": "ac-3f-2",
+                arguments={"target": "3号楼空调", "point_type_id": "3700", "device_id": "30302",
                            "param": "温度设定", "value": "24"})]),
         ]
         if self._i < len(scripted):

@@ -32,8 +32,8 @@ def test_anonymous_loads_nothing():
 
 
 def test_pure_leaves_not_in_top_toolset():
-    """纯叶子(device_status/energy/device_health/record_query)不在顶层 toolset;
-    但 propose_control 多归属——既叶子又升顶层(简单控制不绕子 agent)。"""
+    """纯 facility 叶子(device_status/energy_query/device_health)不在顶层 toolset;
+    但 propose_control 多归属、record_query 已扁平化——都升顶层。"""
     sub = build_tool_subsystem(model_caller=FakeModelCaller([]))
-    assert "device_status" not in sub.toolset and "record_query" not in sub.toolset
-    assert "propose_control" in sub.toolset                    # 多归属顶层
+    assert "device_status" not in sub.toolset and "device_health" not in sub.toolset
+    assert "propose_control" in sub.toolset and "record_query" in sub.toolset   # 升顶层

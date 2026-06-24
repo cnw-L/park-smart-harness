@@ -18,7 +18,7 @@ def test_runtime_login_resolves_principal_and_filters_toolset():
     loaded = rt.toolset_for(p)
     # 无 device:control → execute_proposal 不加载;读权限齐 → 设备/运行/生活/知识在
     assert "execute_proposal" not in loaded
-    assert {"facility_agent", "records_agent", "knowledge_query"} <= set(loaded)
+    assert {"facility_agent", "record_query", "knowledge_query"} <= set(loaded)
 
 
 def test_runtime_org_policy_strips_control_at_login():

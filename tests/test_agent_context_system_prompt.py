@@ -29,7 +29,8 @@ def test_main_profile():
 
 def test_device_sub_profile():
     s = compose(_sel("device_sub"))
-    assert "设备域 agent" in s
+    assert "设备域" in s and "工具" in s     # v8:子 agent 当工具用(有界、返回结果或需澄清)
+    assert "需澄清" in s                     # v8:信息不足→交回主控,不空转
     assert "只读不控制" in s
     assert "不臆造" in s
     assert "不越权" not in s              # v2 删去(同主):子也无从自检授权设备集
