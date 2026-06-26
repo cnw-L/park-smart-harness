@@ -224,3 +224,41 @@ def test_mixed_normal_calls_execute_in_order():
     assert outcomes[0].disposition == "executed"
     assert outcomes[1].disposition == "executed"
     assert results == ["first", "second"]
+
+
+# ─── Part1 健壮性:执行器墙钟超时 + 只读幂等重试(2026-06-24 plan)─────────────
+
+def test_executor_times_out_slow_tool_as_recoverable_failed():
+    """慢工具(漏设超时的 await/子agent空转)→ wait_for 掐断成可恢复 failed,不卡死整轮。"""
+    async def slow(args, ctx):
+        await asyncio.sleep(100)
+        return ToolResult(ok=True, content="never")
+    reg = _reg(LoopTool(name="slow", description="", parameters={}, handler=slow, timeout_s=0.3))
+    out = asyncio.run(SequentialToolExecutor().execute_one(_call("slow"), reg, _ctx()))
+    assert out.disposition == "failed" and out.ok is False
+    assert "超时" in (out.message.content or "") and out.message.is_error
+
+
+def test_idempotent_read_retries_once_then_succeeds():
+    """只读工具瞬时错 → 重试 1 次后成功(自愈,不惊动模型 thrash)。"""
+    calls = {"n": 0}
+    async def flaky(args, ctx):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("瞬时抖动")
+        return ToolResult(ok=True, content="第二次成功")
+    reg = _reg(LoopTool(name="r", description="", parameters={}, handler=flaky, is_control=False))
+    out = asyncio.run(SequentialToolExecutor().execute_one(_call("r"), reg, _ctx()))
+    assert out.disposition == "executed" and out.ok and "第二次成功" in out.message.content
+    assert calls["n"] == 2
+
+
+def test_persistent_read_error_after_retry_is_failed():
+    """只读重试用尽仍失败 → failed(不无限重试)。"""
+    calls = {"n": 0}
+    async def boom(args, ctx):
+        calls["n"] += 1
+        raise RuntimeError("一直错")
+    reg = _reg(LoopTool(name="r2", description="", parameters={}, handler=boom, is_control=False))
+    out = asyncio.run(SequentialToolExecutor().execute_one(_call("r2"), reg, _ctx()))
+    assert out.disposition == "failed" and calls["n"] == 2     # 1 次 + 1 重试

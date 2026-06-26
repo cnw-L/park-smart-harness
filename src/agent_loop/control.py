@@ -13,7 +13,7 @@ Decision = Literal["approve", "reject"]
 class ControlCapability(Protocol):
     """控制能力子系统:冻结 + 确认后执行。承载幂等(后端 deviceCtrl 缺幂等键,此处桩实现)。"""
 
-    def freeze(self, call: ToolCallReq) -> PendingAction: ...
+    def freeze(self, call: ToolCallReq, thread_id: str = "") -> PendingAction: ...
 
     async def resolve(self, pending: PendingAction, decision: Decision) -> ToolResult: ...
 
@@ -28,8 +28,9 @@ class FakeControlCapability:
         # 真实执行次数(测试用):幂等重入不应增加
         self.execute_count: int = 0
 
-    def freeze(self, call: ToolCallReq) -> PendingAction:
-        """铸造 PendingAction:每次调用产生全新 idem_key,args 深拷贝防外部篡改。"""
+    def freeze(self, call: ToolCallReq, thread_id: str = "") -> PendingAction:
+        """铸造 PendingAction:每次调用产生全新 idem_key,args 深拷贝防外部篡改。
+        (桩无提案存储,thread_id 仅为协议一致;真实现 ProposalControlCapability 按会话取提案。)"""
         idem_key = uuid4().hex
         frozen_action = {"name": call.name, "arguments": dict(call.arguments)}
         return PendingAction(

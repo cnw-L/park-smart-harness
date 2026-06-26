@@ -127,6 +127,7 @@ async def run_loop(
     depth: int = 0,
     verifier: Verifier = _DEFAULT_VERIFIER,
     compaction: "Compactor | None" = None,
+    session_id: str | None = None,          # 会话(用户)id;子 loop 透传父会话,使控制提案按会话切片
 ) -> LoopResult:
     """事务型内圈引擎:一轮迭代 = 一个事务(assemble→model→tool batch→commit)。
 
@@ -333,7 +334,9 @@ async def run_loop(
             # 注:熔断是「整批后」判定(failures>=max 在循环结束后查),不在批中途打断——
             # 与既有 failed/批末提交语义一致;一批内的所有调用都会先各自归一化并入 buffer。
             ctx = ToolContext(budget=budget, depth=depth, run_control=rc,
-                              principal=conversation.principal)
+                              principal=conversation.principal,
+                              # session_id 显式给(含空串=父会话)优先;None=未给→用本 conv 的 thread_id
+                              thread_id=conversation.thread_id if session_id is None else session_id)
             pending_batch: list = []
             results: list[Message | None] = [None] * len(turn.tool_calls)  # 按原顺序占位
             allow_items: list[tuple] = []  # (index, call, tool) 待并发
@@ -367,7 +370,7 @@ async def run_loop(
                         )
                         failures += 1
                     else:
-                        pending = control.freeze(call)   # 控制冻结:串行、绝不并发
+                        pending = control.freeze(call, thread_id)   # 控制冻结:串行、绝不并发;按会话取提案
                         pending_batch.append(pending)
                         results[i] = Message(
                             role="tool", content="[pending_confirmation]",

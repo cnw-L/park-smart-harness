@@ -65,7 +65,10 @@ def make_subagent_tool(
         # 共享预算池:ctx.budget 传递给子,子迭代消耗父预算
         # 中圈上下文:传入则子用真组装器(固定层走 sub_config.role='leaf' → device_sub 档);
         # 不传则退化到 run_loop 默认桩(保持既有测试/调用不变)。
-        run_kwargs = dict(store=sub_store, run_control=sub_rc, depth=ctx.depth + 1)
+        # session_id 透传父会话(含空串,故不用 `or None`):子 propose 的提案记**父会话** id,
+        # 父 freeze 才找得到(子 conv 是另一 uuid)。
+        run_kwargs = dict(store=sub_store, run_control=sub_rc, depth=ctx.depth + 1,
+                          session_id=getattr(ctx, "thread_id", ""))
         if assembler is not None:
             run_kwargs["assembler"] = assembler
         if gate is not None:                       # 同一治理闸下沉子 loop(叶子同等受查;默认 None=引擎缺省闸)
@@ -80,17 +83,20 @@ def make_subagent_tool(
         # ── 类型化结果映射 ──────────────────────────────────────────────────────
         status = sub_res.status
 
-        if status in {"completed", "budget_exhausted"}:
-            # 子正常完成或用完预算后收尾 → 父视为工具成功
+        if status == "completed":
+            # 子真正完成 → 父视为工具成功
             return ToolResult(ok=True, content=sub_res.final)
 
-        if status == "failed":
-            # 使用 reason 区分失败原因:model_error / empty_response / stall / tool_failures
-            # 父 executor 将 ok=False 记为 disposition="executed"(业务-no),
-            # 不增加父的 max_tool_failures 计数器
+        # ★budget_exhausted / failed(stall 等)= 子**没完成**任务、未取得可靠结果。
+        #   绝不能返 ok=True(否则父把"步数用尽时模型瞎收的尾"当成功结果 → 据此**臆造**温度/状态)。
+        #   返 ok=False + 明确"无数据·别臆造",**不回传**子可能编造的 final(换成强制信号)。
+        if status in {"budget_exhausted", "failed"}:
+            why = "步数用尽" if status == "budget_exhausted" else (sub_res.reason or "未完成")
             return ToolResult(
-                ok=False, content=sub_res.final,
-                error=sub_res.reason or "failed",
+                ok=False,
+                content=(f"子任务未完成({why}),**未取得可靠结果**。如实告诉用户没查到/没办成,"
+                         f"**绝不据此臆造温度/状态/读数等任何结果**;若是设备查无,直接回报「无此设备」。"),
+                error=sub_res.reason or status,
             )
 
         if status == "interrupted":

@@ -51,6 +51,23 @@ class Grounded:
     param_type: str = ""          # paramType:1=模拟量 2=数字量(deviceCtrl 必带)
     param_sub_id: str = ""        # paramSubId(透传)
     current_value: str = ""       # 该设备当前值(getListByPointId 设备级;供读回/展示)
+    action: str = "deviceCtrl"    # 下发动作:deviceCtrl(普通)/doorControl(门禁通道控制,走 /through)
+
+    def door_payload(self) -> dict:
+        """doorControl 下发体 = **真机抓包验证的最小体**(测试门 code 200):deviceIds[int] + pointId +
+        pointIds[str] + status(开门/关门) + currentParamValue(2/1) + isAble。**绝不多发**任何字段——
+        平台对门禁多发字段会"假200不注册"(memory backend-filter-behavior)。门走 deviceCtrl 也是假成功。"""
+        out: dict = {}
+        did = _int_or_none(self.device_id)
+        if did is not None:
+            out["deviceIds"] = [did]
+        if self.point_id:
+            out["pointId"] = self.point_id
+            out["pointIds"] = [self.point_id]
+        out["status"] = self.param_status or self.param_value      # 开门/关门
+        out["currentParamValue"] = self.param_value                # 2=开门 / 1=关门
+        out["isAble"] = True
+        return {k: v for k, v in out.items() if v not in (None, "", [])}
 
     def payload(self) -> dict:
         """deviceCtrl 下发体 = 完整 `DeviceControlEvent`(对齐生产 `_device_ctrl_payload` + 接口文档):
@@ -138,6 +155,18 @@ async def ground_control(intent: Intent, *, backend: BackendClient, reversibilit
         # 别静默产出缺 deviceId 的残缺 payload(否则下发时后端报错、用户看不出真因)。
         return Rejection(f"设备 id「{intent.device_id}」非数字,无法下发——请先用 device_status 取正确设备坐标",
                          "bad_device_id")
+    # ★门禁通道控制:RLMJ 等门禁的开关门是**固定动作**(开门=2/关门=1),既不在 getListByPointId、
+    #   getMenu 本环境也 MENU_NOT_EXISTS → 用**已知动作**直建,走 doorControl(真机验:测试门 code 200)。
+    door_act = _door_action(intent.value) or _door_action(intent.param)
+    if door_act and _is_door(intent.point_type_no, intent.system_no):
+        status, cpv = door_act
+        return Grounded(
+            device_id=intent.device_id, point_id=intent.point_id,
+            point_type_id=intent.point_type_id, point_type_no=intent.point_type_no,
+            param_type_id="", param_type_no="channelControl", param_type_name="通道控制",
+            param_value=cpv, param_status=status, system_no=intent.system_no,
+            reversibility="可逆", action="doorControl",
+        )
     try:
         # ★设备级权威发现优先:有 pointId 用 getListByPointId(带 currentValue + 该设备边界);
         #   退化才用类型级 sycPointParamType/page(仅 pointTypeId)。
@@ -167,6 +196,7 @@ async def ground_control(intent: Intent, *, backend: BackendClient, reversibilit
         return Rejection("识别为不可逆操作(非状态型),后端暂不支持安全下发,已降级人工",
                          "irreversible_no_idem")
 
+    action = "doorControl" if _is_door_param(p) else "deviceCtrl"   # 门禁分流:走 /through 非 deviceCtrl
     return Grounded(
         device_id=intent.device_id, point_id=intent.point_id,
         point_type_id=intent.point_type_id, point_type_no=intent.point_type_no,
@@ -174,7 +204,33 @@ async def ground_control(intent: Intent, *, backend: BackendClient, reversibilit
         param_type_name=p.param_type_name, param_value=param_value,
         param_status=param_status, system_no=intent.system_no, reversibility=rev,
         param_type=p.param_type, param_sub_id=p.param_sub_id, current_value=p.current_value,
+        action=action,
     )
+
+
+def _is_door_param(p: ParamType) -> bool:
+    """门禁通道控制判据(对齐生产 _is_door_control):channelControl/通道控制/门锁/开关门
+    → 走 doorControl 端点,绝不混 deviceCtrl(真机:deviceCtrl 控门是假成功)。"""
+    no = p.param_type_no or ""
+    nm = p.param_type_name or ""
+    return no == "channelControl" or "通道控制" in nm or "门锁" in nm or "开关门" in nm
+
+
+def _is_door(point_type_no: str, system_no: str) -> bool:
+    """门禁设备判据(设备级):门禁系统 mj、或点类型**以 MJ 结尾**(RLMJ/…门禁机码)/含门禁。
+    用 endswith 而非 `in`,避免含 MJ 的非门类型码误判。"""
+    no = (point_type_no or "").upper()
+    return system_no == "mj" or no.endswith("MJ") or "门禁" in (point_type_no or "")
+
+
+def _door_action(value: str) -> tuple[str, str] | None:
+    """门禁开关门 → (status, currentParamValue)。固定语义:开门=2 / 关门=1(真机抓包确认)。"""
+    v = (value or "").strip()
+    if v in ("开门", "开", "打开", "开启", "开锁"):
+        return ("开门", "2")
+    if v in ("关门", "关", "关闭", "闭门", "锁门"):
+        return ("关门", "1")
+    return None
 
 
 def _num(v) -> float | None:

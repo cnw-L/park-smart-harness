@@ -295,3 +295,18 @@ def test_live_getdevicepage():
         assert isinstance(hits, list)        # 通即可(数量随真数据)
     finally:
         asyncio.run(client.aclose())
+
+
+def test_prodapi_door_control_posts_to_through_base():
+    """门禁通道控制 → /through/pt/ptDoor/doorControl(去 /project),不走 deviceCtrl(控门假成功)。"""
+    captured = {}
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url); captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"code": 0, "data": True})
+    c = ProdApiBackendClient(base_url="http://x/prod-api/project", bearer_token="t")
+    c._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    ok = asyncio.run(c.door_control(payload={"deviceIds":[1],"pointIds":["p"],"status":"开门",
+                                             "currentParamValue":"2","isAble":True}, token="u"))
+    assert ok is True
+    assert captured["url"].endswith("/through/pt/ptDoor/doorControl")
+    assert captured["body"]["status"] == "开门" and captured["body"]["currentParamValue"] == "2"

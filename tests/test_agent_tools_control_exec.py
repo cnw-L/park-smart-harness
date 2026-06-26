@@ -222,3 +222,95 @@ def test_prodapi_device_ctrl_backend_code_error_raises():
     client._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     with pytest.raises(BackendError):
         asyncio.run(client.device_ctrl(payload={"deviceId": "x"}))
+
+
+def test_execute_routes_doorcontrol_to_door_endpoint():
+    """门禁提案(action=doorControl)→ 走 backend.door_control,绝不误走 deviceCtrl(假成功)。"""
+    store = ProposalStore()
+    backend = FakeBackendClient(device_hits=[DeviceHit(device_id="30302", name="大门", status="在线", value="")])
+    cap = ProposalControlCapability(store, backend=backend, execution_mode="real")
+    h = store.put(ControlProposal(target="大门", action="doorControl",
+        params={"deviceIds":[30302],"pointId":"p","status":"开门","currentParamValue":"2","isAble":True},
+        reversibility="可逆", token="t"))
+    res = asyncio.run(cap.resolve(cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h})), "approve"))
+    assert backend.door_calls and backend.door_calls[0]["status"] == "开门"   # 走了 door
+    assert backend.ctrl_calls == []                                          # 没误走 deviceCtrl
+
+
+# ── Part3 控制幂等批A:确定性 idem + WAL + in_flight 消解 ──────────────────────
+
+class _SpyLedger:
+    """可持久化账本桩(镜像 PgIdempotencyLedger get/put_if_absent/update),记录事件顺序。"""
+    def __init__(self): self.rows = {}; self.events = []
+    async def get(self, k): return self.rows.get(k)
+    async def put_if_absent(self, k, status, result):
+        self.events.append(("put", status))
+        if k in self.rows: return False
+        self.rows[k] = {"status": status, **result}; return True
+    async def update(self, k, status, result):
+        self.events.append(("update", status)); self.rows[k] = {"status": status, **result}
+
+
+def test_idem_key_is_deterministic_per_proposal():
+    """确定性 idem_key:同提案两次 freeze → 同 key(uuid4 会每次不同→WAL 永远 miss→重发)。"""
+    store = ProposalStore()
+    cap = ProposalControlCapability(store)
+    h = store.put(ControlProposal(target="x", action="deviceCtrl",
+        params={"deviceId": 1, "paramValue": "24"}, reversibility="可逆"))
+    call = ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h})
+    assert cap.freeze(call).idem_key == cap.freeze(call).idem_key
+
+
+def test_wal_writes_in_flight_before_done():
+    """WAL:先 put(in_flight) 后 update(done);成功路径正常返回。"""
+    store = ProposalStore()
+    backend = FakeBackendClient(device_hits=[DeviceHit(device_id="1", name="x", status="在线",
+        value="5", readings=[("WD", "温度", "24")])])
+    led = _SpyLedger()
+    cap = ProposalControlCapability(store, backend=backend, execution_mode="real", ledger=led)
+    h = store.put(ControlProposal(target="x", action="deviceCtrl",
+        params={"deviceId": 1, "paramValue": "24", "paramTypeNo": "WD"}, reversibility="可逆", token="t"))
+    res = asyncio.run(cap.resolve(cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h})), "approve"))
+    assert led.events[0] == ("put", "in_flight") and ("update", "done") in led.events
+    assert res.ok and len(backend.ctrl_calls) == 1
+
+
+def test_in_flight_irreversible_returns_unknown_no_resend():
+    """崩溃窗口 in_flight + 不可逆 → 状态未知、绝不重发(at-most-once 核心)。"""
+    store = ProposalStore()
+    backend = FakeBackendClient()
+    led = _SpyLedger()
+    cap = ProposalControlCapability(store, backend=backend, execution_mode="real", ledger=led)
+    h = store.put(ControlProposal(target="阀", action="deviceCtrl", params={"deviceId": 1, "paramValue": "1"},
+        reversibility="不可逆", token="t"))
+    p = cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h}))
+    led.rows[p.idem_key] = {"status": "in_flight", "content": ""}      # 模拟上次发了一半崩
+    res = asyncio.run(cap.resolve(p, "approve"))
+    assert res.ok is False and "状态未知" in (res.error or "")
+    assert backend.ctrl_calls == []                                   # 不可逆绝不重发
+
+
+def test_wal_done_returns_cached_no_refire():
+    """账本已 done(同 idem)→ 返缓存、绝不二次下发。"""
+    store = ProposalStore()
+    backend = FakeBackendClient(device_hits=[DeviceHit(device_id="1", name="x", status="在线", value="24")])
+    led = _SpyLedger()
+    cap = ProposalControlCapability(store, backend=backend, execution_mode="real", ledger=led)
+    h = store.put(ControlProposal(target="x", action="deviceCtrl", params={"deviceId": 1, "paramValue": "24"},
+        reversibility="可逆", token="t"))
+    p = cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h}))
+    led.rows[p.idem_key] = {"status": "done", "content": "[executed] cached"}
+    res = asyncio.run(cap.resolve(p, "approve"))
+    assert res.ok and "cached" in res.content and backend.ctrl_calls == []
+
+
+def test_freeze_scopes_latest_to_thread_no_cross_user_leak():
+    """★跨用户串提案防护:用户B 无 handle execute,绝不能取到用户A 的提案。"""
+    store = ProposalStore()
+    store.put(ControlProposal(target="甲设备", action="deviceCtrl",
+        params={"deviceId": 1, "paramValue": "24"}, reversibility="可逆", thread_id="userA"))
+    cap = ProposalControlCapability(store)
+    pB = cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={}), thread_id="userB")
+    assert pB.frozen_action["name"] == "__invalid_proposal__"     # B 本会话无提案 → 哨兵,不串甲
+    pA = cap.freeze(ToolCallReq(id="e2", name="execute_proposal", arguments={}), thread_id="userA")
+    assert pA.frozen_action["name"] == "deviceCtrl"               # A 取到自己的

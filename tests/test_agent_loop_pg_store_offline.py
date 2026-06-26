@@ -161,3 +161,9 @@ def test_pg_store_pool_none_until_io():
     # 构造后 pool 为 None，schema_ready 为 False — 无任何 I/O 发生
     assert store._pool is None
     assert store._schema_ready is False
+
+
+def test_pg_ledger_has_update_method():
+    """WAL 第二阶段:PgIdempotencyLedger 需有 update(in_flight→done/failed)。"""
+    from agent_loop.pg_store import PgIdempotencyLedger
+    assert hasattr(PgIdempotencyLedger, "update")

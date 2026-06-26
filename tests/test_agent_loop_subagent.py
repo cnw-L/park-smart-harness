@@ -322,3 +322,18 @@ def test_subagent_injected_assembler_yields_device_sub_profile():
     assert sys_msg.role == "system"
     assert "只读不控制" in (sys_msg.content or "")     # device_sub 档生效
     assert "总入口" not in (sys_msg.content or "")      # 确认不是 main 档(裸桩也不会有这句)
+
+
+def test_budget_exhausted_is_not_success_no_fabrication():
+    """★子用尽预算/失败 = **没完成** → 返 ok=False + 「别臆造」(防父把'步数用尽时瞎收的尾'当成功结果→幻觉)。"""
+    reg = LoopToolRegistry(); reg.register(echo_tool())
+    # 模型永远调 echo、永不给最终答案 → 子跑满预算 → budget_exhausted
+    fake = FakeModelCaller([
+        ModelTurn(content="", tool_calls=[ToolCallReq(id=f"e{i}", name="echo", arguments={"text": "x"})])
+        for i in range(10)])
+    tool = make_subagent_tool(name="device_agent", description="设备子工具", sub_config=_sub_cfg(max_iter=2),
+                              sub_registry=reg, model_caller=fake)
+    ctx = ToolContext(budget=BudgetTracker(LoopBudget(max_iterations=20)), depth=0)
+    res = run(tool.handler({"task": "查不存在的东西"}, ctx))
+    assert res.ok is False                                          # 不再误报 ok=True
+    assert "臆造" in res.content and "未取得可靠结果" in res.content   # 强制"无数据·别编"信号给父

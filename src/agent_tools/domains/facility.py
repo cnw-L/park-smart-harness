@@ -35,10 +35,11 @@ def _device_status_tool(backend: BackendClient) -> LoopTool:
             return ToolResult(ok=False, content="", error=f"设备查询失败:{exc}")
         if not hits:
             scope = "、".join(p for p in [device, region] if p) or "条件"
-            return ToolResult(ok=True, content=(
-                f"未查到匹配「{scope}」的设备(**后端正常**,只是在册设备里没有这个名字)。"
-                f"**别用相近名字反复重试**(会空耗步数);要么不带名字查一次列出在册设备核对,"
-                f"要么直接如实回报「无此设备」让用户确认——别臆断成后端故障。"))
+            # ★查无 = 业务否(ok=False)→ 执行器渲成 [error],**无进展看门狗据此 3 次内停**(防 qwen
+            #   反复换名空转吃满步数);消息明确"后端正常·别重试·直接回报无此设备"。
+            return ToolResult(ok=False, content="", error=(
+                f"未查到匹配「{scope}」的设备(后端正常,只是在册设备里没有这个名字)。"
+                f"别用相近名字反复重试(会空耗步数)——直接如实回报「无此设备」让用户确认,别臆断成后端故障。"))
         # 0/1/N 候选都回(N 时交子 agent 消歧;真区域树消歧后续接)。
         # ★摘要优先:首行给**可直接作答**的类型/状态计数——小模型(qwen)对长列表会空转/re-call(实测
         #   40 台明细 1819 字 → qwen 不作答反复重查触 stall)。明细后置且短(示例,真实总数以首行计数为准,

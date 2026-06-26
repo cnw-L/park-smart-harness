@@ -152,6 +152,16 @@ class PgIdempotencyLedger:
             )
         return row is not None
 
+    async def update(self, idem_key: str, status: str, result: dict) -> None:
+        """WAL 第二阶段:把已存在的 in_flight 行更新为最终 status(done/failed)+ result。"""
+        await self._store._ensure_schema()
+        pool = await self._store._get_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE agentloop_idem SET status=$2, result_json=$3::jsonb WHERE idem_key=$1",
+                idem_key, status, json.dumps(result),
+            )
+
 
 # ---------------------------------------------------------------------------
 # PgControlCapability

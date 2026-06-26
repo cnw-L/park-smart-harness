@@ -73,9 +73,12 @@ def make_propose_control_tool(store: ProposalStore, backend: BackendClient,
         # target 优先用上面解析好的设备名(device/target);都没有则退到点类型编码(Grounded 无 point_type_name)
         target = target or g.point_type_no or "目标设备"
         human = f"对「{target}」{g.param_type_name}={g.param_value}（{g.reversibility}）"
+        # 动作由 grounding 判定:门禁通道控制 → doorControl(走 /through);其余 → deviceCtrl。
+        params = g.door_payload() if g.action == "doorControl" else g.payload()
         handle = store.put(ControlProposal(
-            target=target, action="deviceCtrl", params=g.payload(),
-            human=human, reversibility=g.reversibility, token=token or ""))
+            target=target, action=g.action, params=params,
+            human=human, reversibility=g.reversibility, token=token or "",
+            thread_id=getattr(ctx, "thread_id", "") or ""))   # 会话归属:execute 按会话取,防串提案
         # ★handle 不进模型可见文本(M5:模型不碰治理对象)。execute_proposal 自动取最近一条提案,
         #   无需 handle round-trip——这里只给人话确认,不暴露/不要求复制 handle。
         return ToolResult(ok=True, content=(
@@ -89,13 +92,14 @@ def make_propose_control_tool(store: ProposalStore, backend: BackendClient,
             "登记一个设备控制提案(只登记、不执行;系统查权威字典校验可控性/范围/可逆性,不合规当场拒)。"
             "★最简用法:只给 **device(设备名,如「空调机组106」)+ param(参数名,如「温度」「开关」)+ "
             "value(如「24」「开」)**——系统会自动解析设备坐标(deviceId/pointTypeId),**你不必抄长 id**。"
-            "返回 handle,主控凭 handle 确认执行。(若你手头已有 device_status 的坐标,也可直接传 point_type_id 等。)"),
+            "★门禁也用本工具:**开门/关门**直接传 device(如「测试门禁A7」)+ value「开门」/「关门」即可,"
+            "系统自动走门禁专用通道(不必区分端点)。返回 handle,主控凭 handle 确认执行。"),
         parameters={
             "type": "object",
             "properties": {
-                "device": {"type": "string", "description": "设备名(推荐),如 空调机组106;系统据此解析坐标"},
-                "param": {"type": "string", "description": "要控的参数名,如 温度/温度控制/开关"},
-                "value": {"type": "string", "description": "期望值,如 24/开"},
+                "device": {"type": "string", "description": "设备名(推荐),如 空调机组106、测试门禁A7;系统据此解析坐标"},
+                "param": {"type": "string", "description": "要控的参数名,如 温度/温度控制/开关(门禁可省略)"},
+                "value": {"type": "string", "description": "期望值,如 24/开;门禁用 开门/关门"},
                 "target": {"type": "string", "description": "目标设备人话名(等同 device)"},
                 "point_type_id": {"type": "string", "description": "点位类型id(可选;给了 device 就不必)"},
                 "point_type_no": {"type": "string"},

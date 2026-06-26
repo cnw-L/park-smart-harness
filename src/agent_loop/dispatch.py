@@ -1,9 +1,12 @@
 from __future__ import annotations
+import asyncio
 from dataclasses import dataclass
 from typing import Literal, Protocol
 from .messages import Message, ToolCallReq
 from .pending import PendingAction
 from .tools import LoopToolRegistry, ToolContext, ToolResult
+
+DEFAULT_TOOL_TIMEOUT_S = 30.0   # 执行器默认墙钟超时;工具可经 LoopTool.timeout_s 覆盖(慢工具如 RAG/子agent)
 
 
 @dataclass
@@ -80,20 +83,35 @@ class SequentialToolExecutor:
             )
             return ToolExecOutcome(disposition="failed", message=msg, ok=False, pending=None)
 
-        # ── 普通工具:运行 handler,异常归一化 ────────────────────────────────
-        try:
-            result: ToolResult = await tool.handler(call.arguments, ctx)
-            # 业务层 ok=False 仍是 "executed"(工具正常返回领域错误,非基础设施崩溃)
-            content = result.content if result.ok else f"[error] {result.error}"
-            if tool.output_budget:
-                content = tool.output_budget.apply(content)
-            msg = Message(role="tool", content=content, tool_call_id=call.id, name=call.name)
-            return ToolExecOutcome(disposition="executed", message=msg, ok=result.ok, pending=None)
-        except Exception as exc:
-            # handler 抛异常 → 基础设施/配置错误,归为 failed
-            content = f"[error] {exc}"
-            msg = Message(role="tool", content=content, tool_call_id=call.id, name=call.name)
+        # ── 普通工具:运行 handler(墙钟超时 + 只读幂等重试),异常归一化 ──────────
+        timeout = tool.timeout_s or DEFAULT_TOOL_TIMEOUT_S
+        attempts = 1 if tool.is_control else 2     # 只读:1 次重试(幂等);控制:零重试(幂等风险)
+        last_exc: Exception | None = None
+        result: ToolResult | None = None
+        for i in range(attempts):
+            try:
+                result = await asyncio.wait_for(tool.handler(call.arguments, ctx), timeout=timeout)
+                last_exc = None
+                break
+            except asyncio.TimeoutError:
+                # 墙钟超时 → 可恢复 failed(绝不让单次工具调用卡死整轮);超时不重试。
+                msg = Message(role="tool", name=call.name, tool_call_id=call.id, is_error=True,
+                              content=f"[error] 工具「{call.name}」超时({timeout}s)已中断——可重试或换更具体的查询")
+                return ToolExecOutcome(disposition="failed", message=msg, ok=False, pending=None)
+            except Exception as exc:
+                last_exc = exc
+                if i + 1 < attempts:
+                    await asyncio.sleep(0.5)        # 短退避后重试(仅只读;控制 attempts=1 不进这分支)
+        if last_exc is not None:                    # 重试用尽仍异常 → 基础设施错误,归为 failed
+            msg = Message(role="tool", content=f"[error] {last_exc}", tool_call_id=call.id, name=call.name)
             return ToolExecOutcome(disposition="failed", message=msg, ok=False, pending=None)
+        assert result is not None
+        # 业务层 ok=False 仍是 "executed"(工具正常返回领域错误,非基础设施崩溃)
+        content = result.content if result.ok else f"[error] {result.error}"
+        if tool.output_budget:
+            content = tool.output_budget.apply(content)
+        msg = Message(role="tool", content=content, tool_call_id=call.id, name=call.name)
+        return ToolExecOutcome(disposition="executed", message=msg, ok=result.ok, pending=None)
 
     async def execute(
         self,

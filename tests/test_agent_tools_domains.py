@@ -158,3 +158,11 @@ def test_facility_agent_proposes_into_shared_store_without_leaking_handle():
     # handle 不经模型,主控用 execute_proposal 取最近一条;共享 store(证据①)才是真值源。
     assert "提案已登记" in res.content and "execute_proposal" in res.content
     assert prop.handle not in res.content                  # 关键:handle 不进模型可见文本
+
+
+def test_device_status_not_found_is_business_no_for_watchdog():
+    """★查无设备 = 业务否(ok=False)→ 执行器渲 [error] → 无进展看门狗据此停,防 qwen 换名空转。"""
+    leaves = {s.tool.name: s.tool for s in
+              facility_leaf_specs(backend=FakeBackendClient(device_hits=[]), store=ProposalStore())}
+    r = asyncio.run(leaves["device_status"].handler({"device": "不存在的楼空调"}, _ctx()))
+    assert r.ok is False and "无此设备" in (r.error or "") and "别用相近名字反复重试" in (r.error or "")

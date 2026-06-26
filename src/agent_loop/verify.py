@@ -47,3 +47,22 @@ class NullVerifier:
         ctx: ToolContext,
     ) -> VerifyVerdict:
         return VerifyVerdict(business_ok=outcome.ok)
+
+
+class ControlVerifier:
+    """控制结果业务校验(替 NullVerifier 桩):控制"已受理 ≠ 已生效"——读回对账若 effective=False/pending,
+    虽 ok=True 也判 business_ok=False → loop 标 [verify-failed],让模型知道"下发了但没生效"、去重试/上报,
+    而非当成功收尾。只读工具沿用 ok 放行(其错误已由工具自报)。"""
+
+    async def verify(
+        self,
+        call: ToolCallReq,
+        tool: LoopTool,
+        outcome: ToolExecOutcome,
+        ctx: ToolContext,
+    ) -> VerifyVerdict:
+        text = (outcome.message.content if outcome.message else "") or ""
+        is_control_result = getattr(tool, "is_control", False) or "[executed]" in text
+        if is_control_result and ("effective=False" in text or "effective=pending" in text):
+            return VerifyVerdict(business_ok=False, note="控制已受理但读回未达目标(未生效/待生效)")
+        return VerifyVerdict(business_ok=outcome.ok)

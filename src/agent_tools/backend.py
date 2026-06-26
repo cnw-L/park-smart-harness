@@ -216,6 +216,9 @@ class BackendClient(Protocol):
     async def device_ctrl(self, *, payload: dict[str, Any],
                           token: str | None = None) -> bool: ...
 
+    async def door_control(self, *, payload: dict[str, Any],
+                           token: str | None = None) -> bool: ...
+
     async def records(self, *, kind: str, status: str | None = None,
                       record_type: str | None = None, point: str | None = None,
                       begin_time: str | None = None, end_time: str | None = None,
@@ -239,12 +242,15 @@ class FakeBackendClient:
 
     def __init__(self, device_hits: list[DeviceHit] | None = None,
                  permissions: tuple[str, ...] = _FAKE_PERMS,
-                 param_types: list[ParamType] | None = None, ctrl_ok: bool = True) -> None:
+                 param_types: list[ParamType] | None = None, ctrl_ok: bool = True,
+                 door_ok: bool = True) -> None:
         self._hits = device_hits
         self._perms = tuple(permissions)
         self._params = param_types
         self._ctrl_ok = ctrl_ok
+        self._door_ok = door_ok
         self.ctrl_calls: list[dict[str, Any]] = []     # 记录下发(测试用,不触网)
+        self.door_calls: list[dict[str, Any]] = []     # 记录门禁下发(走 doorControl,不混 ctrl_calls)
 
     async def device_status(self, *, name=None, region=None, token=None) -> list[DeviceHit]:
         if self._hits is not None:
@@ -295,6 +301,10 @@ class FakeBackendClient:
     async def device_ctrl(self, *, payload, token=None) -> bool:
         self.ctrl_calls.append(dict(payload))          # 记录、不触网
         return self._ctrl_ok
+
+    async def door_control(self, *, payload, token=None) -> bool:
+        self.door_calls.append(dict(payload))          # 门禁走独立通道,不混 deviceCtrl
+        return self._door_ok
 
     async def records(self, *, kind, status=None, record_type=None, point=None,
                       begin_time=None, end_time=None, page_size=10, token=None) -> RecordPage:
@@ -357,6 +367,8 @@ class ProdApiBackendClient:
         # ★能耗在不同网关前缀(真机实测 /prod-api/energy,非 /project)→ 由 project base 推导。
         # 只替**最后一段** `/project`(rsplit 1),避免主机名含 "project" 时 replace-all 损坏 host。
         self._energy_base = "/energy".join(self._base.rsplit("/project", 1))
+        # 门禁通道控制在 /through(与 /project 平级,去掉末尾 /project)——deviceCtrl 控门是假成功。
+        self._through_base = self._base.rsplit("/project", 1)[0]
         self._bearer = bearer_token
         self._client = httpx.AsyncClient(timeout=timeout_seconds)
         # getDevicePage **必须**带 systemNo(系统/设备大类码,如 kt=空调)。空则 COMMON_SYSTEM_IS_NOT_EXIST。
@@ -504,6 +516,16 @@ class ProdApiBackendClient:
         except httpx.HTTPError as exc:
             raise BackendError(f"deviceCtrl 失败: {exc}", code="request_failed") from exc
         return bool(self._parse(resp))                 # data 是裸布尔(非 dict),直接 bool
+
+    async def door_control(self, *, payload: dict[str, Any], token: str | None = None) -> bool:
+        # ★门禁通道控制 → POST /through/pt/ptDoor/doorControl(deviceCtrl 控门返200但门不动=假成功)。
+        # body 照平台抓包:currentParamValue/status/deviceIds/pointIds/isAble,不发 paramType/paramSubId。
+        try:
+            resp = await self._client.post(f"{self._through_base}/through/pt/ptDoor/doorControl",
+                                           json=payload, headers=self._headers(token))
+        except httpx.HTTPError as exc:
+            raise BackendError(f"doorControl 失败: {exc}", code="request_failed") from exc
+        return bool(self._parse(resp))
 
     async def records(self, *, kind: str, status: str | None = None,
                       record_type: str | None = None, point: str | None = None,

@@ -21,7 +21,10 @@ def test_main_profile():
     assert "控制走确认卡" in s             # v6:卡片就是确认
     assert "等用户确认再执行" not in s     # v6 删去:与 execute_proposal 描述矛盾、致双重确认
     assert "绝不在文本里反问" in s         # v6:不文本反问"是否确认"
-    assert "不猜" in s
+    assert "目标不明就问" in s             # v11:消歧规则(原"不猜")合并、追问归位于此
+    assert "怎么回复" in s                 # v11:追问要可操作(从输出区移入消歧铁律)
+    assert "106" not in s                  # v11:去过时具体值
+    assert "跨域态势" in s                  # v12/v14:整体/今天怎么样→主中枢编排各域 owner(互斥纯正,无跨域工具)
     assert "不臆造" in s
     assert "不越权" not in s              # v2 删去:权限不进 prompt、模型无法自检越权,真拦在闸+后端
     assert "只读不控制" not in s          # 那是子的

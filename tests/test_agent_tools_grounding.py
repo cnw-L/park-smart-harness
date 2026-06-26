@@ -194,3 +194,33 @@ def test_propose_by_name_not_found_asks_for_name():
         {"device": "并不存在的设备", "param": "温度", "value": "24"}, _ctx()))
     assert res.ok is False and "未找到" in (res.error or "")
     assert len(store._store) == 0
+
+
+def test_door_param_detection_and_payload():
+    """门禁通道控制判据 + doorControl payload(数组+currentParamValue+status+isAble,无 paramType)。"""
+    from agent_tools.grounding import Grounded, _is_door_param
+    from agent_tools.backend import ParamType
+    assert _is_door_param(ParamType(param_type_no="channelControl", param_type_name="通道控制"))
+    assert not _is_door_param(ParamType(param_type_no="temControl", param_type_name="温度控制"))
+    g = Grounded(device_id="30302", point_id="p", point_type_id="3700", point_type_no="MJ",
+                 param_type_id="x", param_type_no="channelControl", param_type_name="通道控制",
+                 param_value="2", param_status="开门", system_no="mj", reversibility="可逆",
+                 action="doorControl")
+    pl = g.door_payload()
+    assert pl["status"] == "开门" and pl["currentParamValue"] == "2" and pl["deviceIds"] == [30302]
+    assert "paramType" not in pl and pl["pointIds"] == ["p"]
+
+
+def test_door_known_action_grounds_to_doorcontrol_no_lookup():
+    """门禁(RLMJ)开关门=固定动作:不查 getListByPointId/getMenu,直建 doorControl(开门2/关门1)。"""
+    g = asyncio.run(ground_control(Intent(point_type_id="7816", point_type_no="RLMJ",
+        device_id="1795430718898667520", point_id="c1f9", system_no="mj", param="通道控制", value="开门"),
+        backend=_be()))
+    assert isinstance(g, Grounded) and g.action == "doorControl"
+    pl = g.door_payload()
+    assert pl["status"] == "开门" and pl["currentParamValue"] == "2"
+    assert pl["deviceIds"] == [1795430718898667520] and pl["pointIds"] == ["c1f9"]
+    assert "paramType" not in pl and "paramTypeId" not in pl     # 最小体,不多发(防假200)
+    g2 = asyncio.run(ground_control(Intent(point_type_id="x", point_type_no="RLMJ",
+        device_id="1", point_id="p", system_no="mj", value="关门"), backend=_be()))
+    assert g2.action == "doorControl" and g2.door_payload()["currentParamValue"] == "1"

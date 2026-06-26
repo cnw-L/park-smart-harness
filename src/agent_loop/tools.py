@@ -24,6 +24,7 @@ class ToolContext:
     depth: int
     run_control: "RunControl | None" = None  # 父循环的中断信号;子 agent 共享此信号实现级联中断
     principal: object | None = None           # 身份脊柱(engine-opaque):知识层透传权限、闸 deny 读
+    thread_id: str = ""                        # 会话(用户)id:控制提案按此切片防跨用户串提案;子继承父会话
 
 ToolHandler = Callable[[dict, "ToolContext"], Awaitable["ToolResult"]]
 
@@ -35,6 +36,7 @@ class LoopTool:
     handler: ToolHandler
     output_budget: OutputBudget | None = None
     is_control: bool = False   # 控制型工具标记:executor 拒绝内联执行,转为冻结 PendingAction
+    timeout_s: float | None = None   # 执行器墙钟超时(秒);None=用 dispatch.DEFAULT_TOOL_TIMEOUT_S
     def schema(self) -> dict:
         return {"type": "function", "function": {
             "name": self.name, "description": self.description, "parameters": self.parameters}}

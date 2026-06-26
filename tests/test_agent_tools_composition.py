@@ -27,7 +27,7 @@ def _ctx(principal=_ADMIN):
 def test_top_level_is_eight_entries():
     sub = build_tool_subsystem(model_caller=FakeModelCaller([]))
     schemas = sub.registry.schemas(sub.toolset)
-    assert len(schemas) == 8                                   # 7 域 + propose_control 多归属升顶层
+    assert len(schemas) == 8                                   # 7 域 + propose_control 多归属升顶层(工具职能互斥)
     names = {s["function"]["name"] for s in schemas}
     assert {"facility_agent", "record_query", "propose_control", "execute_proposal"} <= names
 
@@ -75,3 +75,17 @@ def test_facility_proposal_resolvable_by_parent_control():
                                              arguments={"handle": handle}))
     assert pending.frozen_action["name"] == "deviceCtrl"
     assert pending.frozen_action["arguments"].get("paramValue") == "24"     # 解析自字典
+
+
+def test_slow_tools_have_executor_timeout_set():
+    """Part1:慢工具(RAG/子agent)显式设执行器超时,>各自内部 I/O 底,防误杀也防 runaway。"""
+    sub = build_tool_subsystem(model_caller=FakeModelCaller([]))
+    reg = sub.registry
+    assert reg.get("knowledge_query").timeout_s and reg.get("knowledge_query").timeout_s >= 60
+    assert reg.get("facility_agent").timeout_s and reg.get("facility_agent").timeout_s >= 90
+
+
+def test_subsystem_exposes_control_verifier():
+    """组合根产 ControlVerifier(替 NullVerifier 桩),供 demo 主 loop 注入。"""
+    sub = build_tool_subsystem(model_caller=FakeModelCaller([]))
+    assert sub.verifier is not None and sub.verifier.__class__.__name__ == "ControlVerifier"

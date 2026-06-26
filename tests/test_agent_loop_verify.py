@@ -298,3 +298,29 @@ def test_infra_failed_does_not_invoke_verifier():
     assert res.status == "failed"
     # verifier 未被调用(disposition==failed 不走 verify 路径)
     assert verify_called is False
+
+
+# ── ControlVerifier:控制"已受理≠已生效"标 verify-failed(替 NullVerifier 桩)──────
+
+def test_control_verifier_flags_accepted_but_not_effective():
+    from agent_loop.verify import ControlVerifier
+    from agent_loop.dispatch import ToolExecOutcome
+    from agent_loop.messages import Message, ToolCallReq
+    from agent_loop.tools import LoopTool
+
+    def _oc(content):
+        return ToolExecOutcome(disposition="executed", ok=True, pending=None,
+            message=Message(role="tool", content=content, tool_call_id="c", name="execute_proposal"))
+    v = ControlVerifier()
+    call = ToolCallReq(id="c", name="execute_proposal", arguments={})
+    ctl = LoopTool(name="execute_proposal", description="", parameters={}, handler=None, is_control=True)
+    rd = LoopTool(name="record_query", description="", parameters={}, handler=None)
+
+    bad = asyncio.run(v.verify(call, ctl, _oc("[executed] deviceCtrl readback=accepted=True effective=False"), None))
+    assert bad.business_ok is False                                   # 已受理未生效 → verify-failed
+    pend = asyncio.run(v.verify(call, ctl, _oc("[executed] deviceCtrl readback=accepted=True effective=pending(…)"), None))
+    assert pend.business_ok is False                                  # 待生效也判 failed
+    good = asyncio.run(v.verify(call, ctl, _oc("[executed] deviceCtrl readback=accepted=True effective=True"), None))
+    assert good.business_ok is True                                   # 真生效 → 放行
+    rdv = asyncio.run(v.verify(call, rd, _oc("工单 276 单"), None))
+    assert rdv.business_ok is True                                    # 只读放行

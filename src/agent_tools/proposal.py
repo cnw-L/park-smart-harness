@@ -13,7 +13,8 @@ R1(设计稿):子 agent 隔离、只有 `final` 文本回父 → proposal 对象
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+import json
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -35,6 +36,8 @@ class ControlProposal:
     handle: str = ""                                  # 由 ProposalStore.put 分配
     reversibility: str = "可逆"                        # grounding 定;P5 _execute 发射前重断言(F3 纵深防御)
     token: str = ""                                   # propose 时存(resolve 无 ctx);P5 下发用
+    thread_id: str = ""                               # 会话归属:execute_proposal 取"最近一条"须按会话切片,
+                                                      #   否则多用户下取到别人提案=串提案事故(latest_for)
 
 
 class ProposalStore:
@@ -60,3 +63,79 @@ class ProposalStore:
     def items(self) -> list[tuple[str, ControlProposal]]:
         """当前未消解的提案 [(handle, proposal)],按登记顺序。供 demo 检测"登记了但没执行"。"""
         return list(self._store.items())
+
+    def latest_for(self, thread_id: str) -> tuple[str, ControlProposal] | tuple[None, None]:
+        """该**会话**最近一条未消解提案。无 → (None, None)——**绝不回落到别会话**的提案
+        (堵跨用户串提案:execute_proposal 不带 handle 时按此取,而非全局 items()[-1])。"""
+        for h, p in reversed(list(self._store.items())):
+            if p.thread_id == thread_id:
+                return h, p
+        return None, None
+
+
+class RedisProposalStore:
+    """提案的 **Redis 外置**实现(同接口替 ProposalStore)——多实例共享 + 跨重启不丢提案,
+    补全 P4 跨重启 at-most-once(配合 idem 账本)。控制提案低频(人工确认),用**同步** redis
+    客户端不动现有 async 链;偶尔 ~1ms 阻塞可接受。键:
+      `{ns}:p:{handle}` = 提案 JSON(TTL);`{ns}:idx` = 全 handle 集(items 用);
+      `{ns}:thr:{thread_id}` = 该会话 handle 有序表(latest_for 用)。
+    `client` 可注入(测试用假 redis);None 时按 url 延迟建真客户端。"""
+
+    def __init__(self, *, url: str | None = None, ns: str = "proposal",
+                 ttl_seconds: int = 3600, client: Any | None = None) -> None:
+        self._url = url or "redis://localhost:6379/0"
+        self._ns = ns
+        self._ttl = ttl_seconds
+        self._client = client
+
+    def _r(self):
+        if self._client is None:
+            import redis  # 仅用时导入(同步客户端;低频控制提案,不阻塞 async 热路径)
+            self._client = redis.Redis.from_url(self._url, decode_responses=True)
+        return self._client
+
+    def put(self, proposal: ControlProposal) -> str:
+        handle = proposal.handle or uuid4().hex
+        stored = replace(proposal, handle=handle, params=dict(proposal.params))
+        r = self._r()
+        r.set(f"{self._ns}:p:{handle}", json.dumps(asdict(stored), ensure_ascii=False), ex=self._ttl)
+        r.sadd(f"{self._ns}:idx", handle)
+        r.rpush(f"{self._ns}:thr:{stored.thread_id}", handle)
+        return handle
+
+    def _load(self, handle: str) -> ControlProposal | None:
+        raw = self._r().get(f"{self._ns}:p:{handle}")
+        return ControlProposal(**json.loads(raw)) if raw else None
+
+    def get(self, handle: str) -> ControlProposal | None:
+        return self._load(handle)
+
+    def pop(self, handle: str) -> ControlProposal | None:
+        p = self._load(handle)
+        r = self._r()
+        r.delete(f"{self._ns}:p:{handle}")
+        r.srem(f"{self._ns}:idx", handle)
+        if p is not None:
+            r.lrem(f"{self._ns}:thr:{p.thread_id}", 0, handle)
+        return p
+
+    def items(self) -> list[tuple[str, ControlProposal]]:
+        out: list[tuple[str, ControlProposal]] = []
+        r = self._r()
+        for handle in r.smembers(f"{self._ns}:idx"):
+            p = self._load(handle)
+            if p is None:                       # TTL 过期/已 pop → 顺手清索引(惰性)
+                r.srem(f"{self._ns}:idx", handle)
+            else:
+                out.append((handle, p))
+        return out
+
+    def latest_for(self, thread_id: str) -> tuple[str, ControlProposal] | tuple[None, None]:
+        r = self._r()
+        key = f"{self._ns}:thr:{thread_id}"
+        for handle in reversed(r.lrange(key, 0, -1)):
+            p = self._load(handle)
+            if p is not None:
+                return handle, p
+            r.lrem(key, 0, handle)              # 陈旧(TTL过期/已pop未清)→ 顺手清,防 thread 列表无界增长
+        return None, None
