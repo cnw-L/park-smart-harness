@@ -1,7 +1,7 @@
-"""Official-protocol provider adapters for assistant_core.
+"""Official-protocol provider adapters for harness_rag.
 
 The core graph owns orchestration. These adapters only translate provider
-protocols into small assistant_core ports.
+protocols into small harness_rag ports.
 """
 
 from __future__ import annotations

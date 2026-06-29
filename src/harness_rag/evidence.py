@@ -1,4 +1,4 @@
-"""Evidence contracts for assistant_core RAG."""
+"""Evidence contracts for harness_rag."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Milvus collection contract for assistant_core knowledge retrieval."""
+"""Milvus collection contract for harness_rag knowledge retrieval."""
 
 from __future__ import annotations
 

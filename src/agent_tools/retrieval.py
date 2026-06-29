@@ -1,6 +1,6 @@
 """知识检索接缝(KnowledgeRetriever)+ 权限口径策略(KnowledgePermissionPolicy)。
 
-防腐:`agent_tools` 只认协议,真 RAG(`assistant_core/rag`)在接线边适配注入(同 BackendClient)。
+防腐:`agent_tools` 只认协议,真 RAG(`harness_rag`)在接线边适配注入(同 BackendClient)。
 
 **注入层落点(RAG 设计 §4.5)**:身份在会话建立时从可信登录态解析,工具把它编译成 Milvus
 `field_filters`(键名对齐 `rag/filters.py` 白名单),与语义检索一起执行 → 补 RAG 权限"注入层"洞。

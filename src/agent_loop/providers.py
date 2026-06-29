@@ -126,7 +126,7 @@ class OpenAIModelCaller:
 
         # ── 调用模型 ──────────────────────────────────────────────────────────
         # asyncio.wait_for 兜底:httpx 超时管不到事件循环卡死(vLLM worker 挂死不关连接),
-        # 与 assistant_core/models.py 一致。
+        # client timeout 兜网络层、wait_for 兜事件循环层(双保险)。
         response = await asyncio.wait_for(
             client.chat.completions.create(**request),
             timeout=self._timeout,

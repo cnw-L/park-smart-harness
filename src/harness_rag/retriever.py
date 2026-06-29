@@ -1,4 +1,4 @@
-"""Knowledge-only Milvus hybrid-search adapter for assistant_core RAG."""
+"""Knowledge-only Milvus hybrid-search adapter for harness_rag."""
 
 from __future__ import annotations
 

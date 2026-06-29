@@ -1,4 +1,4 @@
-"""Shared Milvus infrastructure for assistant_core."""
+"""Shared Milvus infrastructure for harness_rag."""
 
 from .collections import CollectionSetupResult, MilvusCollectionClient, ensure_collection
 from .client import Embedder, MilvusClientConfig, MilvusSearchClient

@@ -1,11 +1,11 @@
 """知识超域 —— 扁平工具 `knowledge_query`(RAG-as-tool,1 次检索)。
 
-工具只做两件 harness 该做的事(RAG 内核全复用 assistant_core/rag):
+工具只做两件 harness 该做的事(RAG 内核全复用 harness_rag):
 ① **注入层**:读 `ctx.principal` → `KnowledgePermissionPolicy.field_filters` → 可信过滤条件
    (身份来自登录态、绝不模型自报;补 RAG 权限"注入层"洞)。
 ② **渲染**:`Evidence` → 带出处简洁文本;不足老实说、失败不臆造(catalog 给 1500 预算封顶)。
 
-真检索经 `KnowledgeRetriever` 注入(默认 Fake);真适配器包 assistant_core/rag,在接线边。
+真检索经 `KnowledgeRetriever` 注入(默认 Fake);真适配器包 harness_rag,在接线边。
 """
 from __future__ import annotations
 
