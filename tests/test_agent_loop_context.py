@@ -47,14 +47,14 @@ def _plan_with_items(conv: Conversation) -> str:
 
 # ─── 1. 固定层稳定:position-0 system 消息不含 plan ──────────────────────────
 
-def test_stable_system_does_not_contain_plan():
+async def test_stable_system_does_not_contain_plan():
     """position-0 message 是 role=system 的固定层;plan 不进入其中。"""
     cfg = _cfg()
     conv = _conv_with_user()
     plan_text = _plan_with_items(conv)
 
     assembler = LayeredContextAssembler()
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     # position-0 必须是 system
     assert msgs[0].role == "system"
@@ -63,32 +63,32 @@ def test_stable_system_does_not_contain_plan():
     assert "当前计划" not in msgs[0].content
 
 
-def test_stable_system_contains_role_and_instructions():
+async def test_stable_system_contains_role_and_instructions():
     """固定层含 role 信息和基础 agent 指令。"""
     cfg = _cfg(role="supervisor")
     conv = _conv_with_user()
 
     assembler = LayeredContextAssembler()
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     sys_content = msgs[0].content
     assert "supervisor" in sys_content
     assert "agent" in sys_content
 
 
-def test_system_unchanged_when_plan_changes():
+async def test_system_unchanged_when_plan_changes():
     """plan 改变前后,position-0 system 消息内容完全相同(缓存前缀稳定性)。"""
     cfg = _cfg()
     conv = _conv_with_user()
     assembler = LayeredContextAssembler()
 
     # 无 plan 时
-    msgs_before = assembler.assemble(cfg, conv)
+    msgs_before = await assembler.assemble(cfg, conv)
     sys_before = msgs_before[0].content
 
     # 写入 plan
     _plan_with_items(conv)
-    msgs_after = assembler.assemble(cfg, conv)
+    msgs_after = await assembler.assemble(cfg, conv)
     sys_after = msgs_after[0].content
 
     # system 内容必须完全相同
@@ -97,7 +97,7 @@ def test_system_unchanged_when_plan_changes():
 
 # ─── 2. plan 放在 volatile tail(历史之后、最后一条) ──────────────────────────
 
-def test_plan_placed_as_last_message_after_history():
+async def test_plan_placed_as_last_message_after_history():
     """非空 plan → 渲染文本出现在最后一条 Message,在历史之后。"""
     cfg = _cfg()
     conv = _conv_with_user()
@@ -106,7 +106,7 @@ def test_plan_placed_as_last_message_after_history():
     plan_text = _plan_with_items(conv)
 
     assembler = LayeredContextAssembler()
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     last = msgs[-1]
     assert plan_text in last.content
@@ -117,28 +117,28 @@ def test_plan_placed_as_last_message_after_history():
     assert msgs[-1] is last                          # plan 在末尾
 
 
-def test_plan_not_in_system_prefix():
+async def test_plan_not_in_system_prefix():
     """plan 渲染文本不出现在 msgs[0](system 前缀)中。"""
     cfg = _cfg()
     conv = _conv_with_user()
     plan_text = _plan_with_items(conv)
 
     assembler = LayeredContextAssembler()
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     assert plan_text not in msgs[0].content
 
 
 # ─── 3. 空 plan → 无 trailing plan 消息 ─────────────────────────────────────
 
-def test_empty_plan_no_trailing_message():
+async def test_empty_plan_no_trailing_message():
     """plan 为空 → assembled = system + history,无 trailing plan 消息。"""
     cfg = _cfg()
     conv = _conv_with_user()
     # 不写 plan,保持空
 
     assembler = LayeredContextAssembler()
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     # system + 1 user = 2 条
     assert len(msgs) == 2
@@ -149,7 +149,7 @@ def test_empty_plan_no_trailing_message():
 
 # ─── 4. 记忆/知识 hook ────────────────────────────────────────────────────────
 
-def test_memory_hook_injected_after_system_before_history():
+async def test_memory_hook_injected_after_system_before_history():
     """memory hook 返回的 Message 列表出现在 system 之后、历史之前。"""
     cfg = _cfg()
     conv = _conv_with_user()
@@ -158,7 +158,7 @@ def test_memory_hook_injected_after_system_before_history():
     assembler = LayeredContextAssembler(
         memory=lambda c, cv: [mem_msg]
     )
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     # 顺序:system → MEM → user
     assert msgs[0].role == "system"
@@ -169,7 +169,7 @@ def test_memory_hook_injected_after_system_before_history():
     assert mem_idx < user_idx
 
 
-def test_knowledge_hook_injected_after_memory_before_history():
+async def test_knowledge_hook_injected_after_memory_before_history():
     """knowledge hook 返回的 Message 列表出现在 memory 之后、历史之前。"""
     cfg = _cfg()
     conv = _conv_with_user()
@@ -180,7 +180,7 @@ def test_knowledge_hook_injected_after_memory_before_history():
         memory=lambda c, cv: [mem_msg],
         knowledge=lambda c, cv: [know_msg],
     )
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     indices = {m.content: i for i, m in enumerate(msgs)}
     # system(固定) < memory < knowledge < user(历史)
@@ -190,19 +190,19 @@ def test_knowledge_hook_injected_after_memory_before_history():
     assert indices["KNOW:知识库段落"] < user_idx
 
 
-def test_default_hooks_inject_nothing():
+async def test_default_hooks_inject_nothing():
     """默认 hook(无注入)时,assembled 仅含 system + history(+ trailing plan 若有)。"""
     cfg = _cfg()
     conv = _conv_with_user()
 
     assembler = LayeredContextAssembler()
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     # 2 条:system + user
     assert len(msgs) == 2
 
 
-def test_memory_and_knowledge_hooks_with_plan():
+async def test_memory_and_knowledge_hooks_with_plan():
     """hook + plan 综合:顺序 = system → mem → know → history → plan(tail)。"""
     cfg = _cfg()
     conv = _conv_with_user()
@@ -214,7 +214,7 @@ def test_memory_and_knowledge_hooks_with_plan():
         memory=lambda c, cv: [mem_msg],
         knowledge=lambda c, cv: [know_msg],
     )
-    msgs = assembler.assemble(cfg, conv)
+    msgs = await assembler.assemble(cfg, conv)
 
     # system → MEM → KNOW → user → plan
     contents = [m.content for m in msgs]
@@ -232,7 +232,7 @@ def test_memory_and_knowledge_hooks_with_plan():
 
 # ─── 5. 缺 user 消息保护 ──────────────────────────────────────────────────────
 
-def test_guard_raises_on_no_user_message():
+async def test_guard_raises_on_no_user_message():
     """会话缺 user 消息 → raise ValueError(role-alternation 保护)。"""
     cfg = _cfg()
     conv = Conversation(thread_id="t")
@@ -240,7 +240,7 @@ def test_guard_raises_on_no_user_message():
 
     assembler = LayeredContextAssembler()
     with pytest.raises(ValueError, match="user 消息"):
-        assembler.assemble(cfg, conv)
+        await assembler.assemble(cfg, conv)
 
 
 # ─── 6. 集成 sanity:含非空 plan 的 loop run 仍正常完成 ──────────────────────

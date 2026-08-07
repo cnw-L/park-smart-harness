@@ -11,7 +11,7 @@ import asyncio
 
 import pytest
 
-from agent_loop.providers import OpenAIModelCaller
+from agent_loop.providers import OpenAIModelCaller, _split_think
 from agent_loop.llm import ModelTurn
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.config import LoopConfig, LoopBudget
@@ -276,6 +276,57 @@ def test_no_usage_returns_zero_tokens():
 
     turn = asyncio.run(caller(None, [Message(role="user", content="x")], []))
     assert turn.usage_tokens == 0
+
+
+# <think> 剥离测试(防思考漏进答案气泡 + 防 content 原样回传污染多轮)
+
+def test_split_think_strips_closed_block():
+    """闭合 <think>...</think> 块从 content 剥离,思考文本回收。"""
+    clean, think = _split_think("<think>r</think>答案是 42。")
+    assert clean == "答案是 42。"
+    assert think == "r"
+
+
+def test_split_think_unclosed_takes_tail():
+    """未闭合 <think>(截断):取到串尾整段作思考,content 只留前半。"""
+    clean, think = _split_think("前文 <think>未闭合的思考")
+    assert clean == "前文"
+    assert think == "未闭合的思考"
+
+
+def test_split_think_no_block_passthrough():
+    """无 <think> 标签:原样返回,思考为空。"""
+    clean, think = _split_think("三号会议室可容纳10人。")
+    assert clean == "三号会议室可容纳10人。"
+    assert think == ""
+
+
+def test_split_think_only_think_yields_empty_content():
+    """整段都是 <think>:content 为空(不回吐思考当答案)。"""
+    clean, think = _split_think("<think>只有思考没有正文</think>")
+    assert clean == ""
+    assert think == "只有思考没有正文"
+
+
+def test_caller_strips_think_and_routes_to_reasoning():
+    """端到端:caller 把 content 里的 <think> 剥到 reasoning,content 留干净答案。"""
+    resp = _fake_response(content="<think>我先推理一下</think>最终结论:正常。")
+    fake_client = FakeClient(resp)
+    caller = OpenAIModelCaller(client=fake_client, enable_thinking=False)
+    turn = asyncio.run(caller(None, [Message(role="user", content="x")], []))
+    assert turn.content == "最终结论:正常。"
+    assert "我先推理一下" in turn.reasoning
+
+
+def test_caller_merges_leaked_think_with_structured_reasoning():
+    """结构化 reasoning 与漏出的 <think> 并存:合并进 reasoning,content 仍干净。"""
+    resp = _fake_response(content="<think>漏出的思考</think>答案", reasoning="结构化推理")
+    fake_client = FakeClient(resp)
+    caller = OpenAIModelCaller(client=fake_client)
+    turn = asyncio.run(caller(None, [Message(role="user", content="x")], []))
+    assert turn.content == "答案"
+    assert "结构化推理" in turn.reasoning
+    assert "漏出的思考" in turn.reasoning
 
 
 # ── Live smoke（默认 skip）────────────────────────────────────────────────────

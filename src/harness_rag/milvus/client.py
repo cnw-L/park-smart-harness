@@ -37,6 +37,7 @@ class MilvusSearchClient:
     ) -> None:
         self.config = config
         self._client = client
+        self._owns_client = client is None   # 懒建/外部注入:close 时据此决定是否关 client
         self._owns_executor = executor is None
         self._executor = executor or BoundedMilvusExecutor(
             MilvusExecutorConfig(
@@ -47,18 +48,21 @@ class MilvusSearchClient:
         )
         self._loaded_collections: set[str] = set()
         self._load_lock = Lock()
+        self._client_lock = Lock()          # client 懒建防并发(DCL,同 _load_lock)
 
     @property
     def client(self):
-        if self._client is None:
-            from pymilvus import MilvusClient
+        if self._client is None:                      # DCL:锁外快路径(已建),锁内二次判空防并发首访建多连接
+            with self._client_lock:
+                if self._client is None:
+                    from pymilvus import MilvusClient
 
-            kwargs: dict[str, Any] = {"uri": self.config.uri}
-            if self.config.token:
-                kwargs["token"] = self.config.token
-            if self.config.timeout_seconds is not None:
-                kwargs["timeout"] = self.config.timeout_seconds
-            self._client = MilvusClient(**kwargs)
+                    kwargs: dict[str, Any] = {"uri": self.config.uri}
+                    if self.config.token:
+                        kwargs["token"] = self.config.token
+                    if self.config.timeout_seconds is not None:
+                        kwargs["timeout"] = self.config.timeout_seconds
+                    self._client = MilvusClient(**kwargs)
         return self._client
 
     async def hybrid_search(
@@ -251,3 +255,7 @@ class MilvusSearchClient:
     def close(self) -> None:
         if self._owns_executor:
             self._executor.close()
+        if self._owns_client and self._client is not None:   # 懒建的 client 才关(外部注入的由所有者管)
+            close_fn = getattr(self._client, "close", None)
+            if callable(close_fn):
+                close_fn()

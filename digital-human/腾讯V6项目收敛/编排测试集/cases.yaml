@@ -1,0 +1,129 @@
+# 编排测试集 · v1
+# 对齐 5 类工具：设备管理(device_status/energy_query/device_health) / 运行管理(record_query)
+#   / 生活服务(parking_query/restaurant_query/meeting_query) / 知识检索(knowledge_query)
+#   / 执行工具(propose_control + execute_proposal)
+#
+# 两套拆分（行业标准做法）：
+#   suite: engine  →  确定性引擎逻辑（闸/降级/控制时序/状态），用"可控假模型"跑，每次提交都跑，应 100% 稳定通过
+#   suite: model   →  模型行为质量（选工具/拆 plan 准不准），用真 qwen 跑，跑多次取平均、统计性通过线，nightly 跑
+#
+# 评测分层：
+#   expect_state        ← 基于状态的评测（确定、无歧义）；控制类优先用这个：断言后端最终状态
+#   expect_sequence     ← 轨迹评测：期望工具调用顺序（子序列匹配）
+#   expect_tools        ← 期望调到的工具（无序集合）
+#   expect_context_pass ← 上游→下游字段透传（算上下文传递完整率）
+#   expect_gate         ← 闸结果（越权红线）：deny 时控制执行数必须 = 0
+#   inject              ← 故障注入（降级测试）：对某工具注入 timeout/error
+
+cases:
+
+  # ════════════ suite: engine（确定性，假模型跑，每次提交） ════════════
+
+  # ① 控制链 —— 优先 state-based：断言空调最终真状态，而非只看轨迹
+  - id: control_chain_ac_temp
+    suite: engine
+    input: "把 3 号楼会议室的空调调到 24 度"
+    principal: { role: 员工, permissions: [device:read, device:control] }
+    expect_state:                       # ★主断言：后端最终状态（state-based，确定）
+      device: AC-3F-meeting
+      target_param: temperature
+      final_value: 24
+      verified: true                    # 读回对账通过
+    expect_sequence:                    # 辅助：轨迹（时序对不对）
+      - device_status
+      - propose_control
+      - execute_proposal
+      - device_status                   # 读回
+    expect_context_pass:
+      - { from: device_status.device_id,     to: propose_control.device_id }
+      - { from: propose_control.target_value, to: execute_proposal.value }
+
+  # ② 控制链 · 用户拒绝（reject 路径）—— state：动作未执行
+  - id: control_chain_user_reject
+    suite: engine
+    input: "关掉 5 楼所有照明"
+    principal: { role: 员工, permissions: [device:read, device:control] }
+    resolution: reject
+    expect_state: { control_executed_count: 0, lighting_changed: false }
+    expect_tools: [device_status, propose_control, execute_proposal]
+
+  # ③ 越权红线 —— state：控制执行数必须 0
+  - id: redline_citizen_control_denied
+    suite: engine
+    input: "帮我把大厅空调关了"
+    principal: { role: 市民, permissions: [life:read, knowledge:read] }
+    expect_gate: deny
+    expect_state: { control_executed_count: 0 }
+
+  # ④ 越权红线 · 数据隔离 —— state：未泄露员工专属数据
+  - id: redline_citizen_employee_data
+    suite: engine
+    input: "员工食堂今天什么菜、员工价多少？"
+    principal: { role: 市民, permissions: [life:read] }
+    expect_state: { leaked_employee_only_data: false }
+
+  # ⑤ 降级 · 只读超时 —— state：降级生效 + 文案可见 + 无控制副作用
+  - id: degrade_device_timeout
+    suite: engine
+    input: "3 号楼空调现在多少度？"
+    principal: { role: 员工, permissions: [device:read] }
+    inject: { tool: device_status, fault: timeout, after_ms: 3000 }
+    expect_state:
+      degraded: true
+      user_msg_contains: "暂不可用"
+      control_executed_count: 0
+
+  # ⑥ 降级 · 控制类不静默 —— state：未假装成功 + 已告知失败
+  - id: degrade_control_not_silent
+    suite: engine
+    input: "把会议室空调开到 26 度"
+    principal: { role: 员工, permissions: [device:read, device:control] }
+    inject: { tool: execute_proposal, fault: error }
+    expect_state:
+      silent_success: false
+      user_informed_failure: true
+      verified: false
+
+  # ════════════ suite: model（真 qwen 跑，多次取平均，nightly） ════════════
+
+  # ⑦ 生活服务查询（单工具选择准不准）
+  - id: life_restaurant_recommend
+    suite: model
+    input: "推荐个现在不挤的食堂"
+    principal: { role: 员工, permissions: [life:read] }
+    expect_tools: [restaurant_query]
+    expect_result: { has_recommendation: true }      # 最终结果评测（黑盒）
+
+  # ⑧ 多工具查询联动（编排 + 上下文透传）
+  - id: life_parking_then_restaurant
+    suite: model
+    input: "我车停哪了？顺便推荐个近的食堂"
+    principal: { role: 员工, permissions: [life:read] }
+    expect_tools: [parking_query, restaurant_query]
+    expect_context_pass:
+      - { from: parking_query.location, to: restaurant_query.near }
+
+  # ⑨ 运行管理（facade 派发参数对不对）
+  - id: ops_my_workorders
+    suite: model
+    input: "看看我报的维修工单到哪一步了"
+    principal: { role: 员工, permissions: [record:read] }
+    expect_tools: [record_query]
+    expect_tool_args:
+      - { tool: record_query, arg: kind, equals: work_order }
+
+  # ⑩ 知识检索（选 RAG + 带出处）
+  - id: knowledge_rule_query
+    suite: model
+    input: "园区垃圾分类是怎么规定的？"
+    principal: { role: 市民, permissions: [knowledge:read] }
+    expect_tools: [knowledge_query]
+    expect_result: { has_citation: true }
+
+  # ⑪ 多意图拆分（拆成两 todo、可并发）
+  - id: multi_intent_device_and_order
+    suite: model
+    input: "查下 3 号楼空调状态，顺便看有没有我的待处理工单"
+    principal: { role: 员工, permissions: [device:read, record:read] }
+    expect_tools: [device_status, record_query]
+    expect_result: { answered_both: true }

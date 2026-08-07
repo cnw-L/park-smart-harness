@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import re
+from urllib.parse import quote
 from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
 
@@ -668,7 +669,7 @@ class ProdApiBackendClient:
         # GET /user/info/{username}/{parkId} → **能力级**权限码(permissions+apiPermissions)。
         # ★devicePermission/dataScope 是**资源级**(看哪些设备/数据)→ 委托后端 token 过滤,**不喂 gate**
         #   (设计 §六:harness gate 只判能力级;混轴喂 gate 是 bug)。
-        data = await self._get(f"/user/info/{username}/{park_id}", token)
+        data = await self._get(f"/user/info/{quote(str(username), safe='')}/{quote(str(park_id), safe='')}", token)
         out: list[str] = []
         for key in ("permissions", "apiPermissions"):
             v = data.get(key)
