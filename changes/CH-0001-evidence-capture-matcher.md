@@ -1,6 +1,6 @@
 # CH-0001 — evidence_capture 验证命令识别收紧（段首匹配 + 引号感知）
 
-- **状态**：OPEN（执行中）
+- **状态**：CLOSED（2026-09-06 收口，见文末 Calibration）
 - **建立日期**：2026-09-06
 - **所有者**：执行 agent（Claude），用户试点委托链（"你全部帮我搞定吧" → "继续"）
 - **场景路由**：JG-02（修改现有能力），主线 SP-01 → SP-03 → SP-04/05 → SP-06 → SP-11 → SP-12(自审) → SP-13 → SP-19
@@ -70,3 +70,17 @@ READY（impact entry 满足：触发有效、基线可绑定、无未解阻塞�
 ## 工作包
 
 WP-1 匹配器重写（单文件）；WP-2 常驻测试（单文件）；WP-3 全量回归 + 提交；WP-4 Ingest。无跨包依赖，串行执行。
+
+## Calibration（SP-19，2026-09-06）
+
+**Actual vs Accepted**：WP-1..4 全部交付，无实质性偏差。
+
+- 基线物化：`da1f75f`（192 文件；用户产品 WIP 未触碰、未提交）
+- 修复候选：`843d81f`（钩子重写 + 37 例常驻测试 + 本记录）
+- 收口提交：本笔（wiki Ingest + 本记录 CLOSED + evidence 增量）
+
+**验证绑定**：聚焦 37 passed（runs.jsonl 记录 18）；全量 513 passed / 24 skipped（记录 19）；真实数据回溯——19 条历史记录：17 真实验证零漏判、2 误捕获（记录 3、17）全剔除；修复提交自身含 "pytest" 字样未被捕（新匹配器活体自证）。
+
+**N/A 显式登记（红线 5）**：SP-12 以自审代替（单人项目无第二评审人）；SP-14/15/17 无构建工件/发布/部署/目标环境面（仓内工具资产变更）；SP-08/09/10 无数据/依赖/安全面。
+
+**Current 更新**：钩子匹配行为以 843d81f 后状态为 Current（evidence/README.md 的捕获范围描述仍然如实，无需修订）；wiki 判例与处置同步更新（见 wiki/decisions.md、wiki/patterns/evidence-capture-regex-false-positive.md）。

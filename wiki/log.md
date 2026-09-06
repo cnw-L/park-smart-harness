@@ -31,4 +31,11 @@
 - 证据层缺口：两臂运行期间会话根恰迁至 repo-a（无 hooks），runs.jsonl 对两臂命令零捕获；臂前 3-failed 基线态有 15:25 两条运行时绑定记录兜底；两臂产物经独立复跑（各 5 passed）+ git diff（仅 rounding.py 一行）复核。教训入 patterns/session-root-move-disables-hooks。
 - 治疗臂治理全量可见但依旧零技能调取、零 Ingest——与首轮一致，拉层休眠是稳定状态（见 impact.md 本日第二条）。
 
+## [2026-09-06] change | CH-0001：evidence_capture 段首匹配修复——首条走全链的 Change 闭环
+
+- JG-02 全链：SP-01 Current（钩子权威=项目侧资产）/ SP-03（基线物化 `da1f75f` + 变更记录 changes/CH-0001）/ SP-04+05 裁剪最小执行 / SP-06 实现 / SP-11（聚焦 37 + 全量 513 passed/24 skipped）/ SP-12 自审 / SP-13（`843d81f`）/ SP-19 本条。
+- 真实数据回溯验证：runs.jsonl 19 条历史——17 真实验证零漏判，2 误捕获（3、17 号）全剔除；修复提交自身含 "pytest" 字样不再被误捕（活体复证）。
+- 严重度修正：误记录可满足 push_gate 时间新鲜度 → 门禁完整性缺陷（超越 patterns 旧处置"暂不动作"）。
+- 首条治理工件入库（`da1f75f`，192 文件），用户产品 WIP 未触碰未提交。
+
 
