@@ -1,0 +1,358 @@
+# SP-06 Work Package Implementation Control — Operation Contract
+# Machine-loadable mirror of 第五篇-SP06-WorkPackageImplementationControl-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-06
+  name: Work Package Implementation Control
+  status: sealed                   # 2026-08-30 group-2 audit PASS AFTER REPAIR + regression 20/20 VERIFIED
+  version: 1.0.0
+  normativeSource: 第五篇-SP06-WorkPackageImplementationControl-正式操作规程.md
+  singleResponsibility: >
+    Turn one execution-ready Work Package into real software output under control:
+    establish the execution context and applicable guardrails, continuously obtain
+    revision-bound feedback, classify every failure and deviation correctly, and
+    finally declare Implementation Outputs Ready for an explicit scope / revision.
+    Implementation is not "code written"; feedback green is not required verification
+    complete; outputs ready is neither candidate accepted nor change done.
+
+spec:
+
+  triggers:
+    - id: T-work-package-execution-ready       # normal entry from SP-05 A9
+    - id: T-feedback-or-review-finding-rework  # new revision cycle
+    - id: T-material-base-context-change       # re-judge feedback applicability
+    - id: T-execution-plan-adjustment          # org-level adjustment, no layer change
+  boundaryRule: >
+    SP-06 never re-decides requirement (Ch2) and never rewrites design (Ch4);
+    problems belonging to those layers return to those layers.
+
+  inputs:
+    required:                                  # P4 Ch5 §19 implementation entry minimum
+      - name: execution_ready_work_package
+        type: ref                              # SP-05 output
+      - name: accepted_design_revision
+        type: ref
+      - name: owner
+        type: identity
+      - name: working_source_base_context
+        type: reference-set
+        rule: resolvable to revision granularity; main@branch-name insufficient
+      - name: target_slice
+        type: scope
+      - name: expected_output
+        type: output-set-spec
+      - name: verification_concern_interface
+        type: ref
+    executionContextMinimum:                   # P4 Ch5 §21
+      - change-id
+      - work-package-id
+      - accepted-design-revision
+      - working-source / base-revision
+      - owner
+      - target-slice
+      - expected-output
+      - verification-concern
+      - transition-phase (when applicable)
+    optional: []
+
+  outputs:
+    primary:
+      kind: ImplementationOutputBundle
+      fields:
+        - name: implementation_output_set
+          members: [application-code, contract-artifact, migration-schema-output,
+                    dependency, config, observability-hook, documentation-update,
+                    temporary-compatibility-code, feature-flag]
+          rules:
+            - contract change must sync contract artifact
+            - data change must sync migration / schema output
+            - temporary compatibility code carries identity + exit semantics + owner
+            - feature flag obeys Ch4 transition / cleanup design
+            - secrets never enter ordinary output set content
+        - name: implementation_revision_set
+          rule: uniquely resolves actual content; multi-repo / multi-build-unit must bind a set
+        - name: feedback_runs
+          rule: each bound to head revision / base revision / dependency context /
+                test definition / environment
+        - name: feedback_finding_dispositions
+          rule: classification + return layer + result
+        - name: outputs_ready_progress_fact
+          fields: [fact-type, subject, revision-set, design-revision, evidence-basis, at]
+          rule: scoped fact; multi-WP change may be ready in slices
+    nonOutputs:
+      - candidate-baseline-or-selection        # Ch6
+      - required-verification-satisfied        # Ch6
+      - release-or-production-delivery         # Ch7-8
+      - any-current-update                     # merge != current design update; SP-19 only
+
+  invariants:
+    - id: feedback-green-not-required-verification-complete
+    - id: deviation-not-drift                  # deviation is governable; drift is silent boundary crossing
+    - id: ready-not-candidate-accepted-not-change-done
+    - id: rework-is-normal-path                # goal is not rework-to-zero
+    - id: feedback-value-depends-on-binding    # green without revision binding is meaningless
+    - id: incomplete-feature-not-broken-software
+
+  actions:
+    - id: A1
+      name: Confirm entry and establish execution context
+      controlMode: automation
+      rules:
+        - without execution context no later feedback can be bound
+        - re-check upstream gate-zeroing dispositions (SP-05 n-a / delegated / non-blocking)
+          for resolvable rationale/evidence; challenge disguised ones back to SP-05
+    - id: A2
+      name: Resolve applicable implementation guardrail set
+      controlMode: engineering-decision
+      members: [requirement, accepted-change-design, current-architecture-module-contract-data-authority,
+                constraint-policy, security-quality-rule]
+      rules:
+        - resolve by current / target / transition applicability; never a mechanical union
+          demanding all hold simultaneously
+        - a legal change path (current optional -> accepted target required) is not a deviation
+        - deviation = departing the accepted current->transition->target path or crossing
+          authority not licensed to change
+    - id: A3
+      name: Locate source / build WHERE
+      controlMode: automation-assisted
+      rule: navigate logical module -> implemented-by -> source location (Part III);
+            never guess from directories; build unit never guessed from repo hierarchy;
+            generated source is changed at authoritative input / generator
+    - id: A4
+      name: Form implementation units and small batches
+      controlMode: engineering-decision
+      rules:
+        - unit != work package; unit != PR; unit != commit
+        - small batch = feedback-able, revertible, reviewable semantic slice;
+          not fixed LOC; not smaller-is-better
+        - behavior change and big refactor kept apart, but no mechanical PR splitting
+    - id: A5
+      name: Produce the complete output set
+      controlMode: automation + engineering-decision
+      rule: per-output checklist from outputs.primary; hard rules listed there
+    - id: A6
+      name: Run the feedback loop
+      controlMode: automation
+      scopes: [local, pre-submit, integration-context, shared-baseline]
+      rules:
+        - the four scopes are not four mandatory stages
+        - fast / repeatable / diagnostic enough are project-context judgements, not fixed minutes
+        - behavior change should carry the most direct regression protection
+        - static check != dynamic test; change-local test != full required verification
+        - feedback build is a build but != candidate build != release build
+        - local workspace may be temporarily non-green; local failure must not
+          persistently enter the shared baseline
+    - id: A7
+      name: Bind feedback and judge applicability loss
+      controlMode: automation                     # produces challenges; conclusions stay human
+      minimumBinding: [subject-revision-or-implementation-revision-set,
+                       base-or-integration-context, check-test-identity, result,
+                       relevant-dependency-build-context, observed-at]   # P4 Ch5 §81; same
+                                                                         # source as SP-11
+      invalidators: [head-revision-change, base-revision-change,
+                     dependency-context-change, test-definition-change]
+      rule: green result is not a permanent fact; review feedback binds revision too
+    - id: A8
+      name: Classify every failure
+      controlMode: engineering-decision
+      vocabulary:                                # P4 Ch5 §100-108
+        implementation-defect: fix in this layer (rework)
+        test-check-defect: fix the test/check; never bend product code
+        design-assumption-invalidated: return to SP-05
+        new-impact-discovery: return to SP-04
+        requirement-semantic-gap: return to requirement authority
+        integration-conflict-context-change: integration handling + re-evaluation as needed
+        tool-infrastructure-failure: fix toolchain; never revert product for infra failure
+        external-environment-dependency: isolate the external cause
+        unknown-failure: locate before classifying
+      rules:
+        - no default rerun-until-green; classify first
+        - flaky test quarantine carries owner + reason + follow-up   # P4 Ch5 §92; same
+                                                                     # source as SP-11 §11.4
+        - quarantine / skip must never silently turn required evidence green
+        - a required feedback evidence gap must be explicit, with disposition
+    - id: A9
+      name: Separate detail choice / plan adjustment / deviation / drift
+      controlMode: engineering-decision
+      rules:
+        - "detail choice: left to implementation, touches no target/boundary/contract/
+          data-meaning/transition/risk-obligation/recovery; still inside guardrail set"
+        - plan adjustment updates plan/trace only; touching target/contract/data/
+          transition/recovery/risk upgrades it to design change (SP-05)
+        - the "no layer change" judgement must cite the WP's registered re-evaluation
+          trigger list; adjustments are appended to the change record as plan revisions
+          (SP-05 keeps semantic ownership)
+        - deviation judged against the applicable guardrail set; may be found before
+          code lands; finding a deviation is good
+        - developer must never self-approve a deviation through code
+        - drift (silent data-boundary crossing / contract semantic change /
+          transition leak) is prohibited, not a process state
+    - id: A10
+      name: Govern review and integration
+      controlMode: engineering-decision
+      rules:
+        - review is feedback, not proof of all behavior correct; review != test
+        - review must not be the first discoverer of compile errors
+        - reviewer count not fixed; approval binds revision; minor revision re-review
+          decided by policy / materiality
+        - integration != deployment != release; trunk-only and latest-main-per-PR
+          not mandated; material base change forces re-judgement
+        - "shared baseline breakage: classify first, owner assigned, restore-first;
+          breakage is not a change state"
+        - incomplete feature may integrate safely via feature flag mechanisms
+        - merge never updates any current (explicit update via SP-19 only)
+    - id: A11
+      name: Judge implementation outputs ready
+      controlMode: guardrail + engineering-decision
+      mustCarry: [subject, implementation-revision-set, design-revision]
+      minimumConditions:                         # P4 Ch5 §200-206
+        - expected output set exists
+        - outputs mutually coherent
+        - change-local feedback (build / static / direct test) has no known blocker
+        - known material defect = 0
+        - design-relevant deviation disposed (fixed, or new design revision accepted)
+        - temporary compatibility has exit semantics
+        - trace complete (change / work package / design / revision findable)
+      rules:
+        - ready is a scoped progress fact; slices allowed; whole-change single shot not required
+        - ready claims can be invalidated (new revision / base change); history never deleted
+        - "\"known material defect = 0\" must rest on executed, revision-bound feedback
+          records; self-attestation without inspection does not count"
+      doesNotMean: [all-review-complete, all-integration-complete,
+                    required-verification-complete, performance-verified,
+                    security-verification-complete, candidate-baseline,
+                    candidate-accepted, change-done]
+      handoff: SP-07                              # Ch6 candidate identification; SP-07 pending-definition (group-4 — group number corrected in final full-spec regression; SP-07 sealed since 2026-09-01, see group-4 index)
+    - id: A12
+      name: Rework and process signal
+      controlMode: engineering-decision
+      rules:
+        - rework returns to the correct layer and produces a new revision
+        - no blanket full re-run of all checks, but green reuse needs basis
+        - repeated rework and repeated ch5->ch3 returns are process signals,
+          never direct personnel KPIs
+        - failed attempts need not all be retained; diagnostically valuable failures
+          (new class / boundary case) are worth keeping
+
+  gates:
+    - id: G-SP06-01
+      type: hard-gate
+      rule: no-implementation-without-execution-context
+    - id: G-SP06-02
+      type: hard-gate
+      rule: no-rerun-until-green
+    - id: G-SP06-03
+      type: hard-gate
+      rule: no-silent-quarantine-of-required-evidence
+    - id: G-SP06-04
+      type: hard-gate
+      rule: no-silent-guardrail-change            # drift prohibited; deviation must be explicit
+    - id: G-SP06-05
+      type: hard-gate
+      rule: no-ready-with-known-material-defect-or-open-design-relevant-deviation
+    - id: G-SP06-06
+      type: hard-gate
+      rule: merge-push-never-updates-current      # GI-05
+    - id: G-SP06-07
+      type: hard-gate
+      rule: gate-zeroing-judgement-requires-executed-evidence
+
+  passExit:
+    equals: outputs-ready-progress-fact-formed  # subject + revision set + design revision bound,
+                                                # seven minimum conditions met
+    becomesProgressFact: true
+    doesNotMean: [verification-passed, candidate-selected-or-accepted,
+                  change-done, current-updated]
+
+  returnPaths:
+    - condition: implementation defect
+      next: in-layer rework, new revision
+    - condition: test / check defect
+      next: fix the test; never bend product code for green
+    - condition: design assumption invalidated / design-relevant deviation
+      next: SP-05
+    - condition: new impact discovery / scope growth
+      next: SP-04
+    - condition: requirement semantic gap
+      next: requirement authority
+    - condition: material base context change
+      next: context reconciliation (rebase / merge-result build / contract recheck);
+            re-evaluate SP-04 / SP-05 as needed
+    - condition: shared baseline breakage
+      next: owner disposition, restore-first, classify then fix-or-revert
+    - condition: work package cannot continue (external dependency / missing decision)
+      next: work-package blocker; not change BLOCKED (Ch1 non-terminal semantics)
+
+  exceptions:
+    - id: E-small-change
+      rule: unit = PR usually holds; execution context and ready conditions fold into
+            the PR description; semantic items not skippable
+    - id: E-emergency
+      rule: feedback breadth may be compressed; failure classification, deviation
+            disposition and ready minimum conditions are never waived;
+            compression scope explicitly recorded; records reconciled afterwards via
+            SP-19 (sealed, group-3) / SP-21 (pending-definition, group-5)
+    - id: E-generated-output
+      rule: when the toolchain requires editing generated output, record the exception
+            reason and regeneration risk
+
+  evidenceByWork:
+    natural:
+      - output set itself (code / artifact / migration / config)
+      - feedback run records (revision-bound)
+      - finding classification and disposition records
+      - review approval (revision-bound)
+      - ready claim (progress fact fields)
+    extraOnlyFor: [deviation proposal, classification rationale, quarantine decision]
+    rule: feedback retention by diagnostic value; full retention not mandated
+
+  currentUpdateObligation:
+    writesCurrent: false
+    note: shared integration baseline evolution is an integration fact, not an accepted
+          current release; all current updates go explicitly through SP-19 calibration
+          (SP-19 sealed, group-3 — the interim explicit-recorded-change path by domain
+          authority is formally succeeded by SP-19)
+
+  theoryTrace:
+    part1: [GI-03, GI-05, GI-06, GI-07]
+    part2: [ch3-implementation-requirements]
+    part3: [source-build-where, structure-health]
+    part4: [ch1-progress-fact-and-blocked, ch3-ch4-as-return-layers, ch5-full,
+            ch5-minimum-requirements-checklist]
+
+  executableAssets: [EA-08, EA-01, EA-11]
+  assetRule: >
+    tooling fits: running feedback, binding records, invalidation challenges, checklist
+    verification. Tooling does not fit: deviation judgement, failure classification,
+    ready conclusion, review approval.
+
+  referenceProfiles:
+    - id: RP-ONLINE-API-PY-GH
+      bindings:
+        feedback_scopes: local pytest / pre-submit PR checks / compose integration / main CI
+        shared_baseline: protected main branch; breakage owner = maintainer on duty
+        unit_carrier: PR; revision_set = commit SHA (single repo)
+    - id: RP-B-CLI
+      bindings:
+        integration: downstream compatibility matrix CI; shared baseline = release branch
+        runtime_feedback: absent               # explicitly declared
+    - id: RP-C-SDK
+      bindings:
+        integration: downstream compatibility matrix CI; shared baseline = release branch
+        runtime_feedback: absent               # explicitly declared
+
+  example:
+    ref: CHG-WO-017-WP1
+    continues: SP-05 example (WP1 data-expand execution-ready)
+    highlight: >
+      First feedback run fails migration smoke (column written NOT NULL) and is
+      classified implementation defect — guardrail still correct, fixed in-layer at
+      R2 without returning to SP-05; a colleague's proposal to fold a status-enum
+      refactor into the same PR is judged outside the licensed guardrail set and
+      rejected (a deviation proposal would go to SP-05); readiness is declared as
+      a scoped progress fact OutputsReady(WP1@R2, design D1-r1), which says nothing
+      about WP2, let alone change done.

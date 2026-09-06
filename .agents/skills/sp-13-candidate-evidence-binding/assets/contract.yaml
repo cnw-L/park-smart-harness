@@ -1,0 +1,386 @@
+# SP-13 Candidate / Evidence Binding — Operation Contract
+# Machine-loadable mirror of 第五篇-SP13-CandidateEvidenceBinding-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-13
+  name: Candidate / Evidence Binding
+  status: sealed                   # 2026-08-31 group-3 audit PASS AFTER REPAIR + regression 1050 citations VERIFIED (2 note-level repairs)
+  version: 1.0.0
+  normativeSource: 第五篇-SP13-CandidateEvidenceBinding-正式操作规程.md
+  singleResponsibility: >
+    Organize implementation output into an unambiguous, immutable-for-evidence
+    Candidate Baseline; define a versioned Required Verification Set; bind every
+    piece of evidence to an explicit subject / context / definition revision;
+    judge reuse via candidate-delta intersect evidence-dependency-set; maintain a
+    coverage map that honestly separates FAIL / evidence gap / exception; and
+    produce a scope-bound candidate acceptance decision. Candidate is not the
+    change, not the release baseline, not the implementation revision set;
+    coverage complete is not verification satisfied; accept is not release
+    authorization; reject never closes the change.
+
+spec:
+
+  triggers:
+    - id: T-candidate-scope-ready          # meaningful scope of outputs formed (slices legal)
+    - id: T-evidence-arrives               # SP-11 / SP-12 handoffs to bind
+    - id: T-candidate-material-change      # form a new candidate revision (C1 -> C2)
+    - id: T-verification-basis-change      # objective / pass basis / context / exception policy
+    - id: T-revalidation-trigger           # old evidence applicability re-evaluation
+    - id: T-assessment-and-decision        # coverage complete or gaps / exceptions disposed
+    - id: T-sp14-build-facts-arrive        # canonical build result / artifact identity /
+                                           # provenance / materialization-delta disposition
+                                           # for member binding and resolvability checks
+  boundaryRule: >
+    Never produces release baselines, release decisions, delivery authorization
+    (SP-15), target validation conclusions (SP-17), or any current update (SP-19).
+    Pass is not valid evidence; skipped / quarantined / platform-success is never
+    automatically required-evidence pass; a required check is never silently
+    deleted after a test fail.
+
+  inputs:
+    required:
+      - name: ch5_handoff                    # P4 Ch6 §141 formal interface
+        type: bundle
+        members: [implementation-output-set, implementation-revision-set,
+                  design-work-package-trace, change-local-feedback,
+                  review-integration-evidence,   # incl. shared-baseline breakage
+                                                 # and disposition history (SP-12 A10)
+                  known-delegated-verification-concern,
+                  known-exception-transition-context]
+      - name: sp14_build_facts
+        type: ref                              # canonical build result / artifact identity
+                                               # (digest) / provenance / materialization-delta
+                                               # disposition — basis for artifact member binding
+      - name: required_verification_sources
+        type: reference-set
+        members: [requirement, impact, obligation, design, policy]
+        rule: never "all the project's tests"
+      - name: verification_mechanisms_and_environments
+        type: asset-refs                     # incl. representative environment
+      - name: acceptance_policy
+        type: policy                         # automation degree + exception authority
+    optional:
+      - name: prior_candidate_and_evidence_set
+        type: ref                            # C1 -> C2 delta / reuse basis
+    upstreamRechallenge: >
+      Gate-zeroing dispositions inside SP-11 / SP-12 handoffs (reuse rationale,
+      not-applicable, optional classifications, quarantine / gap dispositions,
+      minor-revision review waivers) must carry resolvable rationale; ungrounded
+      ones return to the source procedure (B1 rule).
+
+  outputs:
+    primary:
+      kind: CandidateAssessmentBundle
+      fields:
+        - name: candidate_baseline
+          fields: [candidate-id, candidate-revision, candidate-scope, candidate-manifest]
+          rules:
+            - manifest members bound unambiguously (revision / digest / version or
+              re-resolvable time anchor); no mutable alias as sole identity
+            - dynamic config / feature state bound at effective state
+            - no secret values in the manifest
+        - name: required_verification_set
+          rule: versioned and traceable; each obligation carries its minimum information
+        - name: candidate_evidence_set
+          rule: evidence records with subject / context / definition revision /
+                producer / result plus validity / applicability judgements
+        - name: verification_coverage_map
+          rule: obligation x disposition; not code coverage
+        - name: candidate_verification_assessment
+          vocabulary: [SATISFIED, FAILED, NOT_READY]
+        - name: candidate_acceptance_decision
+          vocabulary: [ACCEPT, ACCEPT_WITH_EXCEPTION, REJECT, DEFER-NOT_READY]
+          binds: [candidate-revision, acceptance-scope, verification-basis-revision,
+                  evidence-set]
+          rule: known exceptions visible to Ch7 / release decision
+        - name: verification_progress_fact
+          fields: [candidate-id-revision, acceptance-scope, verification-basis-revision,
+                   evidence-set-ref, observed-decided-at]   # P4 Ch6 §110
+          rule: never permanently covers a new candidate
+    nonOutputs:
+      - release-baseline-or-decision-or-authorization   # SP-15
+      - production-or-target-validation-conclusion      # SP-17
+      - any-current-update                              # SP-19
+      - engineering-change-closure                      # SP-19; reject never closes
+
+  invariants:
+    - id: candidate-not-change-not-release-baseline-not-revision-set
+    - id: immutable-for-evidence                 # material change -> new revision
+    - id: pass-is-not-valid-evidence
+    - id: evidence-gap-is-not-verification-fail
+    - id: exception-never-rewrites-evidence-result
+    - id: coverage-complete-is-not-verification-satisfied
+    - id: accept-is-scope-bound                  # not release authorization, not production validation
+    - id: reject-does-not-close-the-change
+
+  actions:
+    - id: A1
+      name: Confirm candidate formation entry
+      controlMode: guardrail
+      rules:
+        - ch5 handoff complete per the formal interface; partial candidates legal
+          but never masquerade as the whole change
+        - re-challenge upstream gate-zeroing dispositions (B1)
+    - id: A2
+      name: Define candidate scope
+      controlMode: engineering-decision
+      rule: explicit coverage and non-coverage across source / artifact / migration /
+            config / contract / infrastructure; acceptance claims never exceed scope
+    - id: A3
+      name: Compose candidate manifest and member binding
+      controlMode: automation-assisted + guardrail
+      rules:
+        - members bound to unambiguous revision / digest / version or a time anchor
+          that re-resolves the real content later
+        - mutable aliases (latest / current / bare branch) never carry identity alone
+        - dynamic config / feature state bound at effective state; no secret values
+        - manifest digest risk-conditional (P4 Ch6 §16 — mandated at high
+          supply-chain / audit risk, not for small teams); candidate id / revision issued
+        - artifact identity / provenance come from SP-14 outputs; this procedure
+          binds and verifies resolvability
+    - id: A4
+      name: Establish immutable-for-evidence and coherence
+      controlMode: guardrail
+      rules:
+        - from the first material evidence binding, content freezes; material change
+          forms a new candidate revision; accepted manifests stay historically stable
+        - member coherence verified (e.g. code needing a new field is matched by an
+          in-manifest migration)
+    - id: A5
+      name: Define the required verification set
+      controlMode: engineering-decision        # risk drives depth
+      obligationMinimum:                       # P4 Ch6 §31
+        - obligation-id
+        - subject / concern
+        - verification-objective
+        - required-evidence / method-class
+        - pass / acceptance-basis
+        - required-context / assumption
+        - authority / policy
+        - exception-applicability
+      rules:
+        - derived from requirement / impact / obligation / design / policy
+        - obligation is not a test case and not a fixed test-type checklist
+    - id: A6
+      name: Version the verification basis
+      controlMode: guardrail + authority
+      rules:
+        - the set is versioned before verification starts — the standard for judging
+          the candidate is known in advance
+        - material basis change records reason + authority / decision + revision
+        - legitimate evolution path exists (re-impact -> obligation updated ->
+          set expanded); silently weakening after a FAIL is a red-line violation
+    - id: A7
+      name: Bind evidence
+      controlMode: automation                  # records produced at run time
+      evidenceRecord: [subject, context, definition-and-revision, producer, result]
+      rules:
+        - subject is explicit to a candidate member; not limited to artifact digests
+        - context records the actually resolved environment / config / workload /
+          dependency / tool-rule revision or fingerprint; mutable context aliases
+          never substitute
+        - evidence types span test / analysis / review / inspection / observation
+        - non-representative contexts are annotated with their representativeness limits
+    - id: A8
+      name: Judge validity, applicability and reuse
+      controlMode: engineering-decision        # tools challenge; conclusions stay human
+      rules:
+        - validity (subject / context / definition match + trustworthy execution) is
+          judged apart from result; applicability to the current candidate revision
+          is judged apart from validity
+        - "reuse = candidate-delta intersect evidence-dependency-set: material effect
+          on objective / assumption -> rerun / re-evaluate; none -> reuse with basis"
+        - neither blanket rerun on any change nor blanket inherit on unchanged artifact
+        - performance evidence defaults context-sensitive; stable unit evidence reusable
+        - revalidation triggers route through the same judgement
+    - id: A9
+      name: Maintain coverage map; separate fail / gap / not-ready
+      controlMode: guardrail
+      rules:
+        - coverage map spans every applicable obligation; foldable into CI / PR
+        - valid FAIL -> FAILED; environment / tool failure, skipped, quarantined,
+          wrong subject / context, unresolved definition -> NOT_READY / evidence gap
+        - tool UI green (incl. skipped-but-success) never counts as evidence coverage
+    - id: A10
+      name: Dispose verification exceptions
+      controlMode: authority + engineering-decision
+      minimumInfo: [candidate-scope, authority, reason, residual-risk, recheck-condition]
+      rules:
+        - never rewrites the underlying evidence result
+        - exception applicability judged per obligation; non-waivable obligations
+          are never waived by this procedure
+        - exceptions never auto-inherit into a new candidate revision
+    - id: A11
+      name: Form the candidate verification assessment
+      controlMode: guardrail
+      dispositionVocabulary: [SATISFIED, FAILED, EVIDENCE_GAP, NOT_APPLICABLE,
+                              EXCEPTION_ACCEPTED]
+      rules:
+        - dispositions preserve underlying evidence results
+        - satisfied with exceptions exposes them separately — never a fake clean pass
+        - FAILED and NOT_READY stay separate; their return paths differ
+        - coverage complete (every obligation disposed) stated apart from
+          verification satisfied; a FAIL can be coverage complete
+    - id: A12
+      name: Make the candidate acceptance decision
+      controlMode: decision-point              # automated / specialist+human / hybrid by risk+policy
+      binds: [candidate-revision, acceptance-scope, verification-basis-revision, evidence-set]
+      rules:
+        - reuses Ch1 decision point / record / gate / authority / exception machinery
+        - accept-with-exception exposes known exceptions to Ch7 / release decision
+        - all known material findings disposed before deciding
+        - emit the verification progress fact (candidate id / revision + acceptance
+          scope + basis revision + evidence set ref + observed / decided at)
+        - reject routes per finding and leaves the change open / active
+
+  gates:
+    - id: G-SP13-01
+      type: hard-gate
+      rule: explicit-candidate-scope-and-unambiguous-manifest
+    - id: G-SP13-02
+      type: hard-gate
+      rule: no-mutable-alias-as-candidate-or-evidence-identity
+    - id: G-SP13-03
+      type: hard-gate
+      rule: no-in-place-mutation-after-evidence-binding
+    - id: G-SP13-04
+      type: hard-gate
+      rule: revision-set-never-masquerades-as-candidate-baseline
+    - id: G-SP13-05
+      type: hard-gate
+      rule: versioned-required-set-before-acceptance; no-silent-obligation-deletion
+    - id: G-SP13-06
+      type: hard-gate
+      rule: no-pass-acceptance-on-mismatched-subject-context-definition
+    - id: G-SP13-07
+      type: hard-gate
+      rule: no-blanket-rerun-no-blanket-inherit
+    - id: G-SP13-08
+      type: hard-gate
+      rule: skipped-quarantined-platform-success-never-auto-pass
+    - id: G-SP13-09
+      type: hard-gate
+      rule: exception-never-rewrites-result; non-waivable-never-waived-here
+    - id: G-SP13-10
+      type: hard-gate
+      rule: satisfied-failed-not-ready-distinct; gap-is-not-fail
+    - id: G-SP13-11
+      type: hard-gate
+      rule: known-material-findings-disposed-before-decision
+    - id: G-SP13-12
+      type: hard-gate
+      rule: accept-scope-bound; reject-never-closes-change
+
+  passExit:
+    equals: acceptance-decision-truthfully-made
+    minimumConditions:
+      - manifest fully bound, coherent, immutable-for-evidence
+      - required verification set versioned; coverage map spans applicable obligations
+      - every obligation has an explicit disposition preserving underlying results
+      - assessment semantically correct (exceptions exposed; failed / not-ready separate)
+      - known material findings disposed; exceptions complete and visible to Ch7
+      - decision bound to revision / scope / basis / evidence set; progress fact emitted
+    truthfulOutcomes: [ACCEPT, ACCEPT_WITH_EXCEPTION, REJECT, DEFER-NOT_READY]
+    doesNotMean: [release-authorized, deployed, production-validated, change-closed,
+                  any-current-updated]
+
+  returnPaths:
+    - condition: assessment FAILED
+      next: route by finding — implementation defect -> SP-06; design -> SP-05;
+            new impact -> SP-04; requirement gap -> requirement authority
+    - condition: assessment NOT_READY
+      next: add evidence / fix verification infrastructure / wait / block;
+            environment not ready never proves the candidate wrong
+    - condition: REJECT
+      next: change stays open / active; new candidate reuses evidence only after
+            applicability judgement
+    - condition: basis needs weakening
+      next: explicit verification basis change; silent weakening is a red line
+
+  exceptions:
+    - id: E-partial-candidate
+      rule: meaningful slices may form candidates before the whole change completes;
+            scope declares the slice boundary; acceptance never extrapolates to the
+            whole change
+    - id: E-automated-acceptance
+      rule: low-risk changes may use automated gate accept (immutable manifest +
+            valid required checks + no blocker); obligation definition, exceptions
+            and known-finding disposition keep full semantics
+    - id: E-emergency
+      rule: verification depth compressible under Ch8 fast-path with recorded scope
+            and residual risk; never an evidence-less parallel mechanism; reconciled
+            afterwards via SP-21 / SP-19
+    - id: E-lightweight-coverage-carrier
+      rule: small teams fold coverage into CI / PR; the carrier folds, the
+            per-obligation disposition semantics do not
+
+  evidenceByWork:
+    natural:
+      - CI required checks + PR / test reports (coverage / evidence carriers)
+      - manifest files, decision records
+    extraOnlyFor: [manifest-digest-and-context-snapshots, basis-change-records,
+                   reuse-applicability-rationale, exception-records,
+                   known-finding-dispositions, acceptance-decision-record]
+    rule: small teams need no dedicated platform; semantic records never waived
+
+  currentUpdateObligation:
+    writesCurrent: false
+    note: >
+      Candidate acceptance is a scope-bound fact that the candidate revision may
+      enter the next delivery / release preparation decision — it updates no
+      current. Accepted candidates become target-environment facts via SP-15 /
+      SP-17; current commits go through SP-19. The evidence set and progress fact
+      are candidate Actual Evidence Refs for SP-19 calibration.
+
+  theoryTrace:
+    part1: [GI-03, GI-05, GI-13, ch1-decision-point-gate-authority-exception]
+    part2: [testing-verification-what, build-release-what-boundary,
+            release-candidate-boundary]
+    part3: [build-runtime-refs-as-evidence-context]
+    part4: [ch6-full, ch6-minimum-requirements-137, ch6-baseline-requirements-139-140,
+            ch5-explicit-artifact-selection-72-304, ch6-ch5-interface-141,
+            ch6-ch7-interface-142, ch7-ch6-interface-143, ch8-emergency]
+
+  executableAssets: [EA-08, EA-10, EA-11, EA-07]
+  assetRule: >
+    Tooling fits: producing binding records, maintaining coverage maps, raising
+    applicability challenges, automated gates. Tooling does not fit: obligation
+    definition, reuse conclusions, exception approval, known-finding disposition,
+    non-low-risk acceptance decisions.
+
+  referenceProfiles:
+    - id: generic-layer
+      bindings:
+        applies: all profiles share operation contract / theory trace / evidence / control semantics
+    - id: delivery-shape
+      bindings:
+        rule: shape decides candidate member composition (e.g. CLI cross-platform
+              artifact sets, SDK multi-language packages)
+    - id: risk-overlay
+      bindings:
+        rule: overlay decides obligation depth, provenance depth, acceptance
+              automation degree; concrete mappings registered in group-6
+
+  example:
+    ref: CHG-WO-142-C1-C2
+    continues: SP-12 example (WP-1 / WP-2 / WP-3 ready)
+    highlight: >
+      C1 forms with a manifest binding backend artifact Y (commit SHA, digest from
+      SP-14), migration V203, contract bundle C9 (digest), search mapping S5 and
+      config snapshot P2 — no mutable aliases. Required verification set v1 covers
+      contract compatibility (old consumer + new provider), migration with existing
+      data, search p99 performance and transfer-flow regression (E6). E6's
+      environment fails: evidence gap / NOT_READY, not FAIL; a later run in a
+      representative environment produces a valid FAIL, so C1 is REJECTED and the
+      change stays open. After the in-layer fix, C2 forms as a new revision (C1
+      history untouched): the delta is transfer logic only, so contract evidence
+      is reused with recorded basis, migration evidence is reused if unaffected,
+      performance is rerun as context-sensitive, and the failed obligation is
+      rerun. Deleting the security scan to turn C2 green would be a red-line
+      silent basis weakening. C2 reaches all-satisfied with no gaps and no
+      undisposed findings: ACCEPT(C2) for delivery preparation scope — neither
+      release authorized nor production validated.

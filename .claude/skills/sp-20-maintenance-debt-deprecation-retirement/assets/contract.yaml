@@ -1,0 +1,476 @@
+# SP-20 Maintenance / Debt / Deprecation / Retirement — Operation Contract
+# Machine-loadable mirror of 第五篇-SP20-MaintenanceDebtRetirement-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-20
+  name: Maintenance / Debt / Deprecation / Retirement
+  status: sealed                   # 2026-09-01 group-5 audit PASS AFTER REPAIR (P1 x2 applied) + regression PASS
+  version: 1.0.0
+  normativeSource: 第五篇-SP20-MaintenanceDebtRetirement-正式操作规程.md
+  singleResponsibility: >
+    Organize every controlled modification of the long-term maintenance phase
+    back into the same change loop (a maintenance request is a change request
+    in maintenance context — no second process), govern the recording and
+    prioritization of long-term burdens (technical debt / workarounds /
+    dependency EOL), manage multi-version support and backport, and execute
+    the controlled exit lifecycle deprecation -> EOL -> retirement (including
+    data retirement, zombie-resource prevention, and the final baseline /
+    archive). Core fact: the Maintenance Change.
+
+spec:
+
+  triggers:
+    - id: T-maintenance-request               # defect (corrective) / latent fault
+                                               # (preventive) / environment change
+                                               # (adaptive) / post-delivery capability
+                                               # (additive) / quality improvement
+                                               # (perfective) / emergency follow-up
+                                               # (P2 Ch12 §11-17, §18) — JG-09:
+                                               # SP-20 -> SP-03 -> applicable SPs -> SP-19
+    - id: T-debt-workaround-governance        # debt recording and priority, backlog
+                                               # hygiene, workaround / temporary
+                                               # mitigation exit (§33-40, §56-57)
+    - id: T-long-term-risk-input              # security vulnerability / dependency or
+                                               # platform EOL / compatibility debt
+                                               # (§27-32) — must convert to explicit
+                                               # maintenance risk
+    - id: T-exit-lifecycle                    # deprecation / EOL / retirement decision
+                                               # and execution, data retirement,
+                                               # zombie-resource disposal, final
+                                               # baseline / archive (§67-73, P3 Ch6 §61)
+  redLine: >
+    A maintenance change must walk the controlled change loop (need / impact /
+    implementation / verification / release / current-update traceable,
+    §76.1 [MUST][BASELINE]); deprecation / EOL / retirement are three distinct
+    controlled states (§68) — "nobody uses the old system, just shut it down"
+    is not an exit, it is an incident source.
+
+  inputs:
+    required:
+      - name: maintenance_input_sources
+        type: reference-set           # defect reports / findings / vulnerability
+                                      # advisories / dependency & platform EOL
+                                      # announcements / health signals / user
+                                      # capability requests (§1-9, §27-32)
+      - name: current_baseline_scope
+        type: ref                     # SP-19: scoped current — contract / data /
+                                      # structure / deployment facts under an
+                                      # explicit baseline scope (P3 Ch1 §D)
+      - name: existing_debt_workaround_assets
+        type: reference-set           # debt registry (six-field records) /
+                                      # temporary-mitigation list / flag registry
+                                      # debt face (SP-16 A7 handoff)
+      - name: support_surface_facts
+        type: reference-set           # current support policy (scope / versions /
+                                      # horizon), consumer list and dependency
+                                      # face (§45, §69)
+      - name: maintenance_capacity_and_priority_state
+        type: reference-set           # capacity allocation, recurring-incident /
+                                      # defect-escape / EOL-risk signals (§60-64)
+    conditional: []                   # no conditional inputs; all five required faces
+                                      # exist wherever the procedure applies
+
+  outputs:
+    primary:
+      - name: maintenance_request_mr
+        rule: change request in maintenance context — classification (six types,
+              multiple allowed) + need / impact facts + priority basis; opened via
+              SP-03 (§17, §76.1)
+      - name: long_term_risk_registration
+        fields: [deadline, impact, upgrade-or-replace-plan, verification]
+                                      # dependency / platform EOL / vulnerability
+                                      # converted to explicit maintenance risk
+                                      # (§30, §76.3-4)
+      - name: debt_registry_record
+        fields: [problem, why-accepted, current-cost-risk, owner,
+                 trigger-cleanup-condition, affected-boundary]
+                                      # six fields (§35) + priority judgment +
+                                      # backlog-hygiene disposition (§36-37)
+      - name: workaround_mitigation_governance_decision
+        rule: owner + exit condition + risk per workaround / temporary mitigation;
+              workaround != permanent fix — tracking decision recorded (§56-57)
+      - name: support_backport_decision
+        rule: support-policy revision proposals; backport opened as an independent
+              change re-assessed in target-version context (never mechanical
+              cherry-pick, §46); patch completeness requirement (contract / data /
+              docs, not just code, §44)
+      - name: exit_lifecycle_artifacts
+        fields: [deprecation-decision-and-notice, retirement-plan,
+                 data-retirement-disposition, zombie-resource-list,
+                 final-baseline-archive]        # §70 fourteen items, §71-73
+      - name: maintenance_metrics
+        rule: recurring-incident / defect-escape / security-finding-age /
+              unsupported-dependency-count / EOL-risk / debt-age /
+              emergency-change-rate signal face (§60-62, EA-15)
+    nonOutputs:
+      - change-loop-stage-execution-products         # SP-03 and downstream
+      - emergency-compressed-execution-and-reconciliation   # SP-21 / Ch8
+      - current-baseline-migration-and-closure-verdicts     # SP-19
+      - dependency-toolchain-execution-face          # SP-09
+      - contract-and-migration-design                # SP-07 / SP-08
+
+  invariants:
+    - id: maintenance-changes-walk-the-same-change-loop
+    - id: verification-risk-tailored-never-maintenance-exempt
+    - id: emergency-maintenance-follow-up-obligations-never-vanish
+    - id: critical-eol-converts-to-explicit-maintenance-risk
+    - id: debt-requires-six-field-registration
+    - id: unfinished-obligations-never-renamed-technical-debt
+    - id: maintenance-completion-updates-scoped-current-baseline
+    - id: retirement-is-controlled-with-shutdown-evidence
+    - id: deprecation-eol-retirement-are-three-distinct-states
+
+  actions:
+    - id: A1
+      name: Entry classification and MR opening
+      controlMode: engineering-decision
+      rules:
+        - "classify maintenance inputs into the six types (multiple allowed, §17)
+          and settle the boundary: operational handling (restart / rate-limit /
+          config adjustment that changes no software) stays in the operations
+          domain with its workaround governed by A4; anything that modifies
+          software (including emergency follow-up fixes) opens an MR via SP-03
+          in the same change loop"
+        - "scale judgment: system-boundary restructuring / new independent product
+          -> new development effort (§15), classification rationale in writing"
+    - id: A2
+      name: Long-term risk input conversion
+      controlMode: engineering-decision
+      rules:
+        - "vulnerability / dependency EOL / platform change / compatibility debt
+          never stops at alerts and inboxes: each converts to an explicit
+          maintenance risk (MR + deadline + impact + upgrade-or-replace plan +
+          verification, §30-32) entering maintenance planning"
+        - quality drift and engineering health signals (§41-42) are equally
+          maintenance planning inputs — deteriorating health metrics (recurrent
+          incidents, escaped defects) are the early form of long-term risk
+        - vulnerability response loop (assess -> mitigate/fix -> verify ->
+          release -> follow-up, plus root cause and similar-vulnerability check,
+          §27, §76.4) has its follow-up obligation tracked here; the toolchain
+          execution face hands to SP-09
+    - id: A3
+      name: Debt registry recording and prioritization
+      controlMode: engineering-decision
+      rules:
+        - every technical-debt item registered with six fields (problem / why
+          accepted / current cost-risk / owner / trigger-cleanup condition /
+          affected boundary, §35); priority set per §36 dimensions
+        - periodic backlog hygiene (close / merge / re-prioritize / promote /
+          explicitly accept — explicit acceptance is a legitimate disposition
+          when in writing, §37)
+        - absorb specialized debt faces (e.g. SP-16 flag debt) into this single
+          registry
+        - closure-context debt boundary facts (violates live obligation? still
+          this change's?) are supplied here; the verdict itself belongs to
+          SP-19 (P4 Ch9 §78-81)
+    - id: A4
+      name: Workaround / temporary mitigation governance
+      controlMode: engineering-decision
+      rules:
+        - each workaround / temporary mitigation (feature disabled /
+          compatibility flag / manual runbook / temporary capacity / emergency
+          config / legacy adapter) registered with why / owner / risk / exit
+          condition (§57)
+        - a workaround never closes the root cause — its MR stays open until
+          root cause fixed or risk explicitly accepted (§56), else the
+          workaround slides into toil
+        - recurring-incident cumulative cost (frequency / cumulative cost /
+          trend) feeds the priority signal (§62); root-cause action goes beyond
+          restoring the previous state (§63)
+    - id: A5
+      name: Support policy and backport
+      controlMode: engineering-decision
+      rules:
+        - multi-version maintenance requires an explicit support policy
+          (scope / versions / horizon)
+        - a backport is re-assessed in target-version context and opened as an
+          independent change (SP-03); patch completeness rides with the MR —
+          contract / data / docs updated in sync with code (§44)
+        - verification tailored by risk but never maintenance-exempt (§58);
+          patch releases obey the normal release baseline — "hotfix" is never a
+          reason for an untraceable release (§59)
+    - id: A6
+      name: Exit lifecycle execution
+      controlMode: engineering-decision
+      rules:
+        - deprecation decision recorded and notified (still usable + migration
+          required); EOL wording bound to the project's own support policy
+          (explicit scope / versions / dates); retirement plan per §70's
+          fourteen items — consumer discovery first (§69), then sequenced
+          execution
+        - timeline compression / overlap / skipping (three §68 conditions)
+          carries written rationale; impact / communication / final state must
+          stay explicit
+        - "the retirement execution itself is a change: via SP-03 and downstream;
+          delivery face = SP-15, verification = SP-13 / SP-17"
+    - id: A7
+      name: Data retirement and zombie-resource disposal
+      controlMode: engineering-decision
+      rules:
+        - "data retirement per §71's ten considerations: legal retention /
+          audit / customer export / backup copy / derived
+          data / search index / cache / analytics aggregates / secrets /
+          encryption keys — derivatives share the retirement obligation"
+        - "zombie-resource list (P3 Ch6 §61: old database / topic / queue /
+          namespace / bucket / index / credential / backup / replica) cleaned
+          with the retirement plan; current mapping recalibrated after major
+          data / resource changes (P3 Ch6 §62)"
+        - final baseline / archive per §73's eight items; retention decision
+          (business / legal / security / contract) in writing; shutdown
+          evidence (traffic-zero / access-revoked / data-disposed verification
+          facts) complete before PASS
+    - id: A8
+      name: Legacy modification and modernization path
+      controlMode: engineering-decision
+      rules:
+        - build characterization evidence (characterization test / observed
+          contract / data snapshot / runtime baseline) before modifying legacy,
+          separating current behavior from target behavior (§49)
+        - rewrite must be supported by benefit / risk / lifetime — not "the
+          code is old" (§48); large modernization prefers a migratable path
+          (current -> boundary -> incremental replacement -> compatibility ->
+          data migration -> retire old, §50); pattern choice = SP-05 design
+
+  gates:
+    - id: G-SP20-01
+      type: hard-gate
+      rule: maintenance-changes-walk-the-controlled-change-loop
+      note: need / impact / implementation / verification / release / current-update
+            traceable; no second process; "just maintenance" exempts nothing
+            # §17, §76.1
+    - id: G-SP20-02
+      type: hard-gate
+      rule: maintenance-verification-risk-tailored-only
+      note: no "less testing because maintenance"; patch releases obey the normal
+            release baseline; hotfix is never an untraceable release   # §58-59
+    - id: G-SP20-03
+      type: hard-gate
+      rule: emergency-maintenance-requires-follow-up-owner-resolution-cleanup-evidence
+      note: compressed execution = SP-21 / Ch8; the obligation itself never
+            disappears   # §18, §76.2
+    - id: G-SP20-04
+      type: hard-gate
+      rule: critical-dependency-platform-eol-becomes-explicit-maintenance-risk
+      note: MR + deadline + plan; personal memory / inbox does not count   # §30, §76.3
+    - id: G-SP20-05
+      type: hard-gate
+      rule: vulnerability-response-walks-assess-fix-verify-release-followup-loop
+      note: includes root cause and similar-vulnerability checks   # §27, §76.4
+    - id: G-SP20-06
+      type: hard-gate
+      rule: debt-six-field-registration-and-no-requirement-renaming
+      note: unfinished requirement / contract / data / security / transition
+            obligations are never renamed technical debt to close a change
+            # §35, P4 Ch9 §79/§81
+    - id: G-SP20-07
+      type: hard-gate
+      rule: maintenance-completion-updates-scoped-current-baseline-scope
+      note: contract / data / docs in sync, not just code; formal migration via
+            SP-19   # §43-44, §76.5
+    - id: G-SP20-08
+      type: hard-gate
+      rule: retirement-controlled-with-consumer-impact-data-handling-shutdown-evidence
+      note: deprecation / EOL / retirement three-way separation; EOL wording bound
+            to the project's own support policy   # §68, §70-73, §76.6
+    - id: G-SP20-09
+      type: hard-gate
+      rule: gate-zeroing-classification-requires-resolvable-rationale
+      note: covers just-maintenance / internal-tool-no-policy / debt-later /
+            nobody-uses-just-shutdown; re-challengeable by SP-05 / SP-13 /
+            group audit   # B1
+
+  passExit:
+    equals: >
+      Maintenance cycle / single maintenance obligation completed (bound to an MR
+      or governance object): the MR has walked the change loop and the scoped
+      current baseline scope is updated (via SP-19) + when applicable: long-term
+      risk registration in writing (deadline + plan), debt six-field records /
+      workaround governance decisions on file, support / backport decisions on
+      file + when applicable (exit lifecycle): consumer impact / data retirement /
+      zombie list / final baseline / shutdown evidence complete + maintenance
+      metrics signal face continuously available -> handoff to SP-03 (subsequent
+      changes) / SP-19 (current / closure) / SP-21 (emergency reconciliation,
+      when applicable)
+    doesNotMean: [change-loop-stages-executed, all-debt-repaid,
+                  incident-closed, execution-assets-governed]
+
+  returnPaths:
+    - condition: MR lacking need / impact facts
+      next: complete the facts before entering the loop (returned at SP-03 entry)
+    - condition: emergency follow-up obligation unclaimed
+      next: escalate to project owner for decision; never silently parked
+    - condition: debt item cannot get an owner
+      next: register as unowned debt and raise as a capacity / priority trade-off
+            topic (§64)
+    - condition: backport infeasible in target version
+      next: close that backport MR honestly with recorded reason; never force a
+            cherry-pick
+    - condition: consumer cannot migrate before EOL
+      next: support-policy adjustment or deferral decision in writing
+            (requirement authority decides)
+    - condition: retirement blocked (data / legal / contract)
+      next: route to data / legal / contract handling (SP-08 / SP-07 interfaces);
+            final state deferred but explicit
+    - condition: material design problem (exit path / modernization path unsound)
+      next: SP-05
+    - condition: closure-boundary dispute (renamable as debt?)
+      next: SP-19-domain verdict (P4 §78-81)
+
+  exceptions:
+    - id: E-legacy-without-test-protection
+      rule: build characterization evidence first (§49) as the change's verification
+            baseline — not a claim that old behavior is forever correct, but a
+            separation of current behavior from target behavior before safe
+            modification
+    - id: E-large-addition-or-rewrite
+      rule: changes at the scale of system-boundary restructuring / architecture
+            replacement / an independent new product are managed as a new
+            development effort (§15); rewrites supported by benefit / risk /
+            lifetime (§48) — "old code" is not a rationale; classification in
+            writing
+    - id: E-exit-timeline-compression
+      rule: stages may be shortened / overlapped / skipped when consumers are
+            same-team-controlled / atomically migratable / critical security
+            emergency (§68), but impact / communication / final state must stay
+            explicit — the timeline is compressed, never the obligations
+    - id: E-emergency-maintenance-interface
+      rule: "emergency software modification = emergency maintenance; compressed
+            execution = SP-21 / Ch8. This procedure holds its incompressible
+            follow-up obligations: follow-up owner / permanent resolution /
+            cleanup condition / evidence (§76.2)"
+
+  evidenceByWork:
+    natural:
+      - MR records (classification + priority basis)
+      - "long-term risk registrations (EOL / vulnerability: deadline + plan + follow-up)"
+      - debt registry entries (six fields) and backlog-hygiene records
+      - workaround / temporary mitigation governance records (owner + exit condition)
+      - support policy and backport re-assessment records
+      - deprecation notice / retirement plan / data retirement disposition /
+        zombie cleanup / final baseline / shutdown evidence
+      - maintenance metrics signals (EA-15)
+    extraOnlyFor: [gate-zeroing-classification-rationale,
+                   explicit-debt-acceptance,
+                   timeline-compression-rationale,
+                   rewrite-or-new-effort-judgment,
+                   retention-period-decision]
+    rule: all other evidence emerges naturally from the work
+
+  currentUpdateObligation:
+    writesCurrent: false
+    boundaries:
+      - the scoped current baseline scope update owed by maintenance completion is
+        one link of the change loop; the formal migration goes through SP-19
+        (§43, §76.5)
+      - runtime state facts added during maintenance flow through the existing
+        SP-15 (execution-time) / SP-17 (accepted-face) channels
+      - this procedure guarantees maintenance-side inputs (debt facts, support
+        policy, retirement final state) are consumable by SP-19 (EA-17
+        discoverability)
+
+  theoryTrace:
+    part1: [GI-03, GI-05, GI-06, GI-13]   # shutdown evidence is GI-06 applied; debt
+                                          # records are the long-term face of GI-05
+    part2: [p2-ch12-1-9-maintenance-scope-and-boundaries,
+            p2-ch12-10-17-six-types-no-second-process,
+            p2-ch12-18-26-emergency-triage-security-interface,
+            p2-ch12-27-32-vulnerability-dependency-eol-risk,
+            p2-ch12-33-40-debt-six-fields-priority-backlog-toil,
+            p2-ch12-43-47-scoped-current-support-backport,
+            p2-ch12-48-50-legacy-rewrite-characterization,
+            p2-ch12-51-57-knowledge-handover-workaround,
+            p2-ch12-58-66-verification-release-metrics-capacity,
+            p2-ch12-67-73-retirement-lifecycle,
+            p2-ch12-76-minimum-requirements]
+    part3: [p3-ch1-D-current-structure-baseline-scope,
+            p3-ch6-61-zombie-resource,
+            p3-ch6-62-data-infrastructure-calibration,
+            p3-drift-debt-eol-as-drift-source]
+    part4: [ch7-mr-in-same-change-loop-execution-context,
+            ch8-emergency-compression-interface,
+            ch9-77-83-debt-closure-boundary-and-post-closure]
+    journey: [JG-09]          # maintain, deprecate, replace or retire:
+                              # SP-20 -> SP-03 -> applicable SPs -> SP-19
+
+  executableAssets: [EA-15, EA-17]
+  assetRule: >
+    tooling fits: debt registry maintenance, EOL / cleanup-condition expiry
+    reminders, maintenance metrics collection, consumer-discovery scan
+    assistance, zombie-resource list comparison. Tooling does not fit:
+    priority judgments, explicit acceptance / rewrite / exit decisions,
+    closure-boundary verdicts (SP-19 domain), or "the scanner is quiet so
+    there is no risk" reasoning — tool output is a signal, never a verdict
+    (GI-07). A filled template is never decision evidence (GI-06).
+
+  referenceProfiles:
+    - id: RP-ONLINE-API-PY-GH
+      bindings:
+        maintenance_execution: same change loop + normal CI/CD chain (a patch is
+                               a traceable release)
+        debt_registry: issue-tracker label system + EOL expiry reminders
+        retirement: traffic-removal verification (shutdown evidence = health-check
+                    deregistration + traffic-zero observation) + resource-cleanup
+                    list
+    - id: RP-B-CLI   # pending-definition (group-6)
+      bindings:
+        maintenance: version distribution
+        backport: explicitly judged under distribution-cost constraints
+        retirement: stop distribution + version announcement (installed copies
+                    cannot be force-recalled — final state expressed as "no
+                    longer supported", not "removed"; the support-policy wording
+                    carries the real meaning)
+    - id: RP-C-SDK   # pending-definition (group-6)
+      bindings:
+        retirement: major-version EOL announcement + consumer migration guidance;
+                    released versions are irrevocable (yanking is a
+                    distribution-face action only)
+        compatibility: the old-consumer-must-work obligation within the
+                       compatibility commitment horizon is guaranteed by SP-07
+
+  example:
+    ref: CHG-WO-142
+    continues: group-5 SP-16 example (reason capability launched; flag
+               workorder.bulk_export registered as unowned debt). This example
+               covers the JG-09 main line — maintenance, debt, and one retirement
+    highlight: >
+      Quarterly maintenance cycle receives three input classes: (1) a WO-1.9.1
+      defect report — CLOSED workorders can still Transfer when bulk export is
+      enabled (corrective, §11's native example); (2) an official psycopg driver
+      EOL announcement (adaptive + security face, §13/§30); (3) the reason
+      capability 100%-exposed for a full release cycle -> SP-16 cleanup condition
+      triggered (the cleanup face of additive maintenance). Each opens an MR via
+      SP-03. Long-term risk: psycopg EOL registered (deadline = official support
+      end; impact = all WO-1.8/1.9 versions; plan = upgrade to a supported major
+      with compatibility / integration verification per §58; toolchain face to
+      SP-09). Debt: the workorder.transfer_reason cleanup MR (remove flag + the
+      no-reason old code path, SP-16 A6 handoff); workorder.bulk_export claims
+      owner = work-order-service, six fields completed (problem = 8-month unowned
+      old code path / why accepted = legacy of an unregistered historical change /
+      current cost-risk = test combination + unknown behavior face /
+      trigger-cleanup = evaluate removal after this cycle's defect fix /
+      affected boundary = export module). Workaround: the defect's interim
+      mitigation = an operations-side filter on CLOSED-workorder bulk export
+      (changes no software, operations domain) registered with owner + exit
+      condition = MR-1 fix released; MR-1 stays open until root cause fixed
+      (§56). Support: WO-1.8 still inside the support-policy horizon -> the fix
+      backports to 1.8.1 as an independent MR re-assessed in the 1.8 context
+      (the V203-expand-already-applied fact checked) — no mechanical
+      cherry-pick; patch completeness = transfer contract doc and
+      CLOSED-state-machine notes updated, not just code. Exit: the legacy SOAP
+      transfer v1 endpoint deprecated for 6 months (consumer migration notices
+      acknowledged) -> retirement plan's fourteen items executed; consumer
+      discovery confirms a single internal consumer (same-team control -> §68
+      compression condition met, rationale in writing); final state = v1
+      endpoint removed with v2 REST fully carrying the load. Data and zombies: v1 retirement
+      data disposition — SOAP request logs archived (retention per contract),
+      derived v1 statistics views retired in the same batch, v1-specific
+      credentials revoked; zombie list reconciled (old topics / indexes /
+      credentials cleaned); shutdown evidence = post-removal traffic-zero
+      observation + access-revocation verification (GI-06). Legacy face: the
+      defect fix touches untested legacy assignment logic -> characterization
+      tests first pin the current behavior (CLOSED-not-transferable semantics)
+      before fixing the target behavior — verification baseline first (§49).

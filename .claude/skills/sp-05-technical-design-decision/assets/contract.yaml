@@ -1,0 +1,321 @@
+# SP-05 Technical Design / Decision — Operation Contract
+# Machine-loadable mirror of 第五篇-SP05-TechnicalDesignDecision-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-05
+  name: Technical Design / Decision
+  status: sealed                   # 2026-08-30 group-2 audit PASS AFTER REPAIR + regression 20/20 VERIFIED
+  version: 1.0.0
+  normativeSource: 第五篇-SP05-TechnicalDesignDecision-正式操作规程.md
+  singleResponsibility: >
+    Convert impact conclusions into an executable, evolvable solution: state the facts
+    that must hold at Target, design a safe Transition to reach it, form an Accepted
+    Design, and split out execution-ready Work Packages. Design is change-local
+    authority; Accepted Design is not Current Software Fact, not release completion,
+    and not a permanent freeze.
+
+spec:
+
+  triggers:
+    - id: T-impact-sufficiency-passed          # normal entry from SP-04 A12
+    - id: T-design-reevaluation                # requirement / scope / option / new evidence
+    - id: T-material-plan-change-upgrade       # plan change affecting target / transition / key boundary
+  reevaluationRule: return to the correct layer only; never re-run the whole pipeline
+  reevaluationLayers:                          # P4 Ch4 §205-209
+    requirement-meaning: [requirement, SP-04]
+    affected-scope: [SP-04]
+    technical-option: [SP-05]
+    implementation-detail: [SP-06]
+
+  inputs:
+    required:                                  # P4 Ch4 §5 design entry minimum
+      - name: change_record
+        type: ref                              # SP-03 output
+      - name: accepted_requirement_or_corrective_intent
+        type: ref
+        rule: proposed requirement change must be accepted first; corrective change must not fabricate a requirement change
+      - name: baseline_context
+        type: reference-set                    # starting / working
+      - name: confirmed_affected_scope
+        type: scope                            # SP-04 output
+      - name: impact_assessment_revision
+        type: ref                              # SP-04 output
+      - name: risk_driver_set
+        type: list<risk-driver>
+      - name: engineering_obligation_profile
+        type: obligation-profile               # SP-04 output
+      - name: change_disposition_decision
+        type: decision
+        rule: must allow proceed; produced by change/requirement authority and recorded
+              on the change record (no SP produces it; SP-04 supplies only the basis)
+    rule: missing inputs permit spike/drafting but never a claim of formal implementation basis;
+          pre-impact design exploration must be registered as a spike (one question +
+          expected evidence + exit condition), never free-form drafting retro-blessed later
+    optional: []
+
+  outputs:
+    primary:
+      kind: AcceptedChangeDesign               # bound to design revision + impact revision
+      fields:
+        - name: target_design
+          rule: must-hold facts at success, baseline-scoped; includes target non-goals;
+                target delta allowed for small change; not a full future-current snapshot
+        - name: obligation_resolution
+          vocabulary: [designed, n-a-with-reason, delegated, blocking]
+          rule: per obligation item; traceable back to P4 Ch3; delegated carries recipient + landing point
+        - name: transition_design
+          appliesWhen: intermediate states have engineering meaning
+          rule: migration != transition != rollout
+        - name: design_decisions
+          rule: strictly separate from assumptions; decisions never disguised as facts
+        - name: critical_assumptions
+          rule: each carries a validation plan; assumptions never disguised as decisions
+        - name: design_open_items
+          vocabulary: [blocking, non-blocking-implementation-detail, verification-resolvable]
+          rule: each carries owner + resolve stage
+        - name: design_sufficiency_facts
+          rule: judged per applicable scope
+        - name: execution_plan
+          fields: [work_packages, dependencies, parallel-arrangement]
+          rule: execution plan != project schedule; != task dump
+    nonOutputs:
+      - current-design-update                  # calibration via SP-19
+      - candidate-or-release-conclusion
+      - implementation-itself                  # SP-06
+
+  invariants:
+    - id: accepted-design-not-current-fact     # GI-05
+    - id: accepted-design-not-release-complete
+    - id: accepted-design-not-permanent-freeze # material design change goes via revision
+    - id: target-and-current-coexist-normally
+    - id: design-stabilizes-key-boundaries-not-all-implementation
+    - id: design-depth-driven-by-obligation    # D0/D1/D2 combinable; upgrade or justified downgrade
+
+  actions:
+    - id: A1
+      name: Confirm design entry inputs
+      controlMode: automation
+      rules:
+        - unaccepted requirement must not be used as current requirement
+        - re-check upstream gate-zeroing classifications (SP-04 unknown routing, no-impact
+          basis) for resolvable rationale/evidence; challenge disguised ones back to SP-04
+    - id: A2
+      name: Write target design
+      controlMode: engineering-decision
+      facets: [behavior, responsibility, contract, data, runtime, quality-response, operations, observability]
+      rules:
+        - baseline-scoped; inherits confirmed affected scope and risk driver set
+        - understandable by later verification and comparable by calibration
+        - target non-goals required
+        - no unrelated future wishlist
+        - target must not be secretly shrunk for implementation convenience (shrinking = back to SP-04)
+    - id: A3
+      name: Resolve each engineering obligation
+      controlMode: engineering-decision
+      vocabulary: [designed, n-a-with-reason, delegated, blocking]
+      rules:
+        - delegated is explicit handoff with recipient, not "later"
+        - gate-zeroing dispositions (n-a / delegated) require resolvable, challengeable
+          rationale; the recipient must exist and have been informed
+    - id: A4
+      name: Design transition when applicable
+      controlMode: engineering-decision
+      transitionTriggers: [old-new-version-coexistence, data-migration-backfill,
+                           dual-read-dual-write, consumer-migration,
+                           runtime-service-extraction, feature-flag-shadow-path,
+                           irreversible-change]
+      minimumContent: [transition-scope-phase-owner, entry-condition, transition-invariant,
+                       effective-behavior, compatibility-rule, observation-validation-signal,
+                       proceed-condition, stop-condition, exit-condition, cleanup,
+                       recovery-direction]
+      rules:
+        - exit condition must not rest on date alone
+        - transition without cleanup becomes transition leak
+        - recovery direction != rollback; obeys data semantics; risk-of-recovery considered;
+          partial failure has designed semantics
+        - expand/migrate/contract are patterns, not fixed procedure; contracting too early is a classic incident
+        - no global day-count; may span multiple releases
+        - target becomes new-current candidate only after transition ends
+    - id: A5
+      name: Separate decision, assumption and alternative
+      controlMode: engineering-decision
+      rules:
+        - alternative analysis only when a real material alternative exists
+        - no fabricated alternatives to pad the record
+        - ADR may carry a decision; ADR != the whole change design
+    - id: A6
+      name: Classify design open items
+      controlMode: automation + engineering-decision
+      rule: each item has owner + resolve stage
+    - id: A7
+      name: Judge scoped design sufficiency
+      controlMode: guardrail + engineering-decision
+      coreQuestion: >
+        If implementation of this scope starts now, will any undecided key design
+        force the developer to smuggle a major decision into the code?
+      minimumConditions:                       # P4 Ch4 §131
+        - current / impact ref valid
+        - target explicit enough
+        - affected boundary explicit
+        - required transition designed
+        - engineering obligation dispositioned
+        - critical failure / recovery direction clear
+        - verification direction executable
+        - delivery direction considered
+        - blocking design open item = 0
+        - critical assumption has validation plan
+        - owner / authority coverage adequate
+        - re-evaluation trigger known
+        - every target slice and every designed/delegated obligation traces to at least
+          one defined work package (per-WP readiness may lag)
+      rules:
+        - judged per scope; no whole-change single freeze
+        - scoped sufficiency must not bypass key boundaries (data authority / irreversible contract)
+        - shared guardrail revision change reopens existing scoped sufficiency (coherence, not a new freeze gate)
+    - id: A8
+      name: Accept and anchor the design
+      controlMode: engineering-decision        # authority
+      rules:
+        - bind design revision + corresponding impact revision
+        - forms design-sufficient progress fact
+        - accepted design must be discoverable and versioned
+        - acceptance may be revoked with reason
+        - design DRI != change owner != architecture authority; review depth follows risk; async allowed
+    - id: A9
+      name: Form execution plan and work packages
+      controlMode: automation + engineering-decision
+      workPackageMinimum:                      # P4 Ch4 §162
+        - work-package-id
+        - purpose / target slice
+        - affected scope
+        - accepted design revision
+        - dependencies
+        - owner
+        - expected output
+        - verification concern / evidence interface
+        - transition phase (when applicable)
+        - re-evaluation trigger
+      rules:
+        - split by target slice, by transition phase, or both
+        - design <-> work package bidirectionally traceable; no work package from personal memory
+        - execution dependency is not source-only (schema expand -> writer; consumer compat -> mixed rollout; cross-team)
+        - parallel allowed but shared boundary must not be ignored
+        - execution-ready is scoped readiness; must not lock an unresolved critical decision
+        - enabling work allowed but stays under change/design trace
+        - plan evolves; plan change upgrades design only when target / transition / key boundary affected
+        - SP-05 keeps semantic ownership of the execution plan; in-flight plan adjustments
+          (SP-06 A9) are appended to the change record as plan revisions consumable by
+          this procedure's re-evaluation triggers; the "no layer change" judgement must
+          cite the WP's registered re-evaluation trigger list, never the implementer's say-so
+    - id: A10
+      name: Register re-evaluation triggers
+      controlMode: engineering-decision
+      triggers: [requirement-change, scope-change, material-context-change,
+                 candidate-new-evidence, implementation-deviation]
+      handoff: SP-06
+
+  gates:
+    - id: G-SP05-01
+      type: hard-gate
+      rule: no-design-before-impact            # mirror of SP-04 G-SP04-03
+    - id: G-SP05-02
+      type: hard-gate
+      rule: no-sufficiency-with-blocking-open-items
+    - id: G-SP05-03
+      type: hard-gate
+      rule: no-sufficiency-without-critical-assumption-validation-plan
+    - id: G-SP05-04
+      type: hard-gate
+      rule: no-implementation-with-unresolved-blocking-obligation
+    - id: G-SP05-05
+      type: hard-gate
+      rule: accepted-design-never-written-to-current   # GI-05
+    - id: G-SP05-06
+      type: hard-gate
+      rule: gate-zeroing-disposition-requires-resolvable-rationale
+
+  passExit:
+    equals: scoped-design-sufficiency-passed AND accepted-design-anchored
+            AND execution-plan-exists AND at-least-one-work-package-execution-ready
+            AND re-evaluation-triggers-registered
+    becomesProgressFact: true
+    doesNotMean: [all-questions-answered, formal-documents-complete,
+                  review-meeting-held, implementation-done-or-candidate-accepted]
+
+  returnPaths:
+    - condition: design entry inputs missing
+      next: spike/draft allowed without formal-basis claim; return to SP-03 / SP-04 to complete
+    - condition: blocking open item cannot converge
+      next: design-insufficient with gap + owner + next step; may return to SP-04 or requirement clarification
+    - condition: critical assumption validation fails
+      next: material design change -> new design revision (history preserved)
+    - condition: material context change / hidden consumer found
+      next: return to the layer registered in A10
+    - condition: implemented work package meets design revision
+      next: no automatic rework; evaluate per revision applicability   # P4 Ch4 §213-214
+
+  exceptions:
+    - id: E-small-change
+      rule: fold everything into issue/PR; target delta + brief obligation resolution; semantics not skippable
+    - id: E-technical-spike
+      rule: answers one specific question; expected evidence + exit condition required;
+            spike code never auto-becomes production implementation
+    - id: E-no-real-alternative
+      rule: record "no material alternative" itself; never fabricate analysis
+
+  evidenceByWork:
+    natural:
+      - "accepted design revision (carrier-free: design doc / issue / PR description / ADR set)"
+      - obligation resolution record
+      - transition design and invariants
+      - critical assumption + validation plan
+      - work package definitions and dependencies
+      - sufficiency judgement record
+    extraOnlyFor: [decision, rationale]
+    rule: design and execution plan versioned; fixed filenames not mandated
+
+  currentUpdateObligation:
+    writesCurrent: false
+    note: "design revision never auto-updates current design; target becomes new-current
+          candidate only after transition ends (for no-transition changes: after outputs
+          ready + Ch6 acceptance), via SP-19 calibration — SP-19 sealed (group-3);
+          the interim domain-authority calibration path is formally succeeded by SP-19"
+
+  theoryTrace:
+    part1: [GI-02, GI-03, GI-05, GI-07]
+    part2: [ch3-technical-solution, ch5-architecture]
+    part3: [ch4-target-transition-projection]
+    part4: [ch3-inputs, ch4-full, ch4-minimum-requirements-checklist]
+
+  executableAssets: [EA-05, EA-09, EA-01]
+  assetRule: templates help generate structure; sufficiency never accepts "template filled" as evidence   # GI-06
+
+  referenceProfiles:
+    - id: RP-ONLINE-API-PY-GH
+      bindings:
+        design_carrier: docs/changes/ design record or PR description
+        transition_carrier: alembic expand/migrate/contract + feature flag config
+        work_package_carrier: issue subtasks / PR
+    - id: RP-B-CLI
+      bindings:
+        transition: version-compatibility window (old-version users coexist)
+        runtime_target: absent               # explicitly declared
+    - id: RP-C-SDK
+      bindings:
+        transition: version-compatibility window (old-version users coexist)
+        runtime_target: absent               # explicitly declared
+
+  example:
+    ref: CHG-WO-017
+    continues: SP-04 example (transferReason)
+    highlight: >
+      Target is stated as must-hold facts with non-goals; transition is a
+      mixed-version consumer window whose invariant is old-consumer correctness,
+      exit is test-plus-observation (not a date); the critical assumption
+      "existing consumers tolerate unknown optional fields" carries a contract
+      compatibility test as its validation plan; two work packages with
+      WP2 depending on WP1; WP1 execution-ready immediately.

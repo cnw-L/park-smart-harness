@@ -1,0 +1,312 @@
+# SP-14 Build / Artifact / Provenance — Operation Contract
+# Machine-loadable mirror of 第五篇-SP14-BuildArtifactProvenance-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-14
+  name: Build / Artifact / Provenance
+  status: sealed                   # 2026-08-31 group-3 audit PASS AFTER REPAIR + regression 1050 citations VERIFIED (2 note-level repairs)
+  version: 1.0.0
+  normativeSource: 第五篇-SP14-BuildArtifactProvenance-正式操作规程.md
+  singleResponsibility: >
+    Produce and vouch for canonical build artifact identity: pin the build
+    baseline (source + dependency + build definition + build environment), run
+    reproducible canonical builds, establish digest-level artifact identity,
+    emit provenance at a risk-appropriate depth, execute same-artifact promotion,
+    and evaluate release materialization deltas explicitly. SP-14 produces
+    identity and provenance; SP-13 binds artifacts as candidate members and
+    judges evidence; SP-15 references identities in release formation.
+    "Just packaging" is never a risk-free assumption.
+
+spec:
+
+  triggers:
+    - id: T-candidate-needs-artifact          # candidate-grade build + identity
+    - id: T-release-formation                 # confirm referenced identity is the verified one
+    - id: T-materialization                   # signing / packaging / wrapping / platform-specific
+    - id: T-build-failure-or-nonreproducible
+    - id: T-provenance-depth-required         # supply-chain / audit risk escalation
+    - id: T-no-artifact-change                # pure source / config / docs change:
+                                              # degraded path per MD §11.1 — source-level
+                                              # anchoring here; candidate member binding
+                                              # stays with SP-13 A3
+  boundaryRule: >
+    Never decides candidate membership or evidence applicability (SP-13), release
+    formation / decision / authorization or deployment (SP-15), feedback builds
+    (SP-11), or any current update (SP-19). Provenance proves artifact-from-inputs/
+    builder only; it never substitutes requirement / performance / migration /
+    user verification.
+
+  inputs:
+    required:
+      - name: build_level                     # feedback / candidate / release
+        type: enum
+        rule: level decides the requirement set; the claim must be supportable by
+              the build baseline record
+      - name: source_revision_set
+        type: reference-set
+        rule: resolvable to revision granularity; a single repo SHA never
+              masquerades as a multi-repo set
+      - name: dependency_context
+        type: ref                             # lockfile / version anchors
+      - name: build_definition_revision
+        type: ref                             # EA-10
+      - name: build_environment
+        type: fingerprint                     # builder identity / image / toolchain
+      - name: risk_policy
+        type: policy                          # decides provenance depth
+    optional:
+      - name: accepted_candidate
+        type: ref                             # triggers B/C: manifest + verified identities
+    upstreamRechallenge: >
+      Claims that a feedback artifact already has identity / traceable inputs /
+      stable context (Ch5 §72) must carry resolvable basis; build-level claims
+      must be backed by the build baseline record, else returned (B1 rule).
+
+  outputs:
+    primary:
+      kind: BuildArtifactBundle
+      fields:
+        - name: build_baseline_record
+          fields: [source-revision-set, dependency-context, build-definition-revision,
+                   build-environment-fingerprint]
+        - name: canonical_build_result
+          fields: [artifact-set, artifact-identities, build-outcome,
+                   reproducibility-fact]
+          rule: reproducibility = same digest on re-run, or an explained,
+                enumerated difference list
+        - name: provenance_record
+          rule: >
+            depth by risk — normal: CI run id / source SHA / artifact digest /
+            test report / reviewer record; high: signed artifact / SLSA
+            provenance / attestation / trusted producer / immutable evidence
+            store; coverage boundary explicitly annotated
+        - name: materialization_delta_record
+          fields: [identity-changed, why, new-executable-or-package-identity,
+                   re-evaluation-scope]
+        - name: same_artifact_promotion_record
+          fields: [promoted-identity, source-candidate-revision, promotion-target]
+          rule: the candidate -> release identity chain, traceable per step
+    nonOutputs:
+      - candidate-membership-or-acceptance        # SP-13
+      - evidence-applicability-conclusions        # SP-13
+      - release-baseline-or-decision              # SP-15
+      - non-build-verification-conclusions        # provenance never substitutes
+      - any-current-update                        # SP-19
+
+  invariants:
+    - id: feedback-build-not-candidate-build-not-release-build
+    - id: artifact-identity-never-silently-repointed
+    - id: no-rebuild-a-similar-one-and-claim-verified
+    - id: just-packaging-is-not-risk-free
+    - id: provenance-covers-build-only
+    - id: same-artifact-promotion-preferred
+
+  actions:
+    - id: A1
+      name: Judge build level and purpose
+      controlMode: guardrail
+      rules:
+        - level claim written into the build record
+        - upstream promotion claims checked against identity / input traceability /
+          context stability (Ch5 §72 three conditions + B1); unmet -> rebuild at the
+          candidate / release level
+    - id: A2
+      name: Pin the build baseline
+      controlMode: automation + guardrail
+      inputsToPin: [source-revision-set, dependency-context,
+                    build-definition-revision, build-environment-fingerprint]
+      rule: any input resolvable only through a mutable alias blocks the build
+            until anchored re-resolvably
+    - id: A3
+      name: Execute the canonical build
+      controlMode: automation
+      rules:
+        - record the build run identity (CI run / builder)
+        - same baseline re-run must yield the same digest or an explained,
+          enumerated difference list
+        - unexplained non-reproducibility is a build mechanism defect — classify
+          and fix, never converge by repeated runs
+        - build failures classified via the SP-11 nine-class vocabulary and routed
+    - id: A4
+      name: Establish artifact identity
+      controlMode: automation
+      rules:
+        - digest per artifact; multi-platform / multi-arch enumerated, never
+          collapsed under one label over differing content
+        - identity freezes once referenced by SP-13 / SP-15; content change
+          produces a new identity and explicit re-binding
+    - id: A5
+      name: Emit provenance
+      controlMode: automation + policy
+      depthByRisk:
+        normal: [ci-run-id, source-sha-or-revision-set, artifact-digest,
+                 test-report, reviewer-record]
+        high: [signed-artifact, slsa-provenance, attestation, trusted-producer,
+               immutable-evidence-store]
+      rule: coverage boundary annotated — build provenance covers
+            build inputs / builder only; risk-tiering judgment is SP-10 A6's
+            (SP-10 defines tier requirements and consumes evidence; this
+            procedure produces to the required depth)   # E-5 note-level repair
+    - id: A6
+      name: Execute same-artifact promotion
+      controlMode: guardrail + engineering-decision
+      rules:
+        - every promotion step references the same artifact identity
+        - promotion record: identity, source candidate revision, promotion target
+        - "\"rebuild a similar one\" attempts rejected: either reference the verified
+          identity or route the new artifact through SP-13 as a new candidate member"
+    - id: A7
+      name: Evaluate the release materialization delta
+      controlMode: engineering-decision        # tools diff digests; conclusions stay human
+      questions:
+        - did the verified software content identity change (content digest diff)?
+        - was a new executable / package identity produced (envelope / signature /
+          platform format)?
+        - "if so: what is the delta and which evidence objectives / assumptions does
+          it touch?"
+      rules:
+        - content identity unchanged (pure signature envelope) -> record the
+          inheritance basis, hand to SP-15
+        - new identity -> materialization delta record to SP-13 for evidence
+          applicability re-evaluation (new candidate / supplementary verification
+          as needed)
+    - id: A8
+      name: Hand off build facts
+      controlMode: automation + guardrail
+      handoffs:
+        - to: SP-13
+          carries: artifact identity + build baseline + provenance; delta records
+        - to: SP-15
+          carries: referenceable identity list + promotion records + delta disposition
+        - to: SP-11
+          carries: build-level feedback needs; build failure classifications close in-layer
+      rule: no handoff is candidate acceptance, an applicability conclusion, or a
+            release decision
+
+  gates:
+    - id: G-SP14-01
+      type: hard-gate
+      rule: feedback-build-output-never-masquerades-as-candidate-or-release-grade
+    - id: G-SP14-02
+      type: hard-gate
+      rule: candidate-release-builds-pin-re-resolvable-baselines; no-mutable-alias-inputs
+    - id: G-SP14-03
+      type: hard-gate
+      rule: digest-level-identity; published-identities-never-repointed
+    - id: G-SP14-04
+      type: hard-gate
+      rule: no-rebuild-a-similar-artifact-and-claim-it-verified
+    - id: G-SP14-05
+      type: hard-gate
+      rule: new-materialized-identity-requires-delta-record-and-sp13-reevaluation
+    - id: G-SP14-06
+      type: hard-gate
+      rule: provenance-depth-matches-risk; slsa-never-substitutes-non-build-verification
+    - id: G-SP14-07
+      type: hard-gate
+      rule: no-converging-unexplained-nonreproducibility-by-repetition   # P4 Ch5 §278 same intent
+    - id: G-SP14-08
+      type: hard-gate
+      rule: same-artifact-claims-carry-digest-evidence-and-stay-rechallengeable   # B1
+
+  passExit:
+    equals: artifact-identity-truthfully-established
+    minimumConditions:
+      - build level consistent with a pinned, re-resolvable baseline
+      - canonical build succeeded; reproducibility fact recorded
+      - artifact identity list complete per platform; no silent repointing
+      - provenance depth matches risk; coverage boundary annotated
+      - promotion chain traceable (candidate identity -> release reference)
+      - materialization deltas evaluated, handed off, and SP-13 conclusions recorded
+    doesNotMean: [candidate-accepted, evidence-applies-to-new-identity,
+                  release-formed-or-authorized, any-current-updated]
+
+  returnPaths:
+    - condition: build failure
+      next: SP-11 nine-class routing — source -> SP-06; dependency -> SP-09 domain;
+            toolchain / infra -> fix the mechanism; external -> isolate; unknown -> retain
+    - condition: unexplained non-reproducibility
+      next: build mechanism defect; fix build definition / toolchain (EA-10 governance)
+    - condition: materialization produced new identity
+      next: SP-13 re-evaluation; new candidate revision + supplementary verification as needed
+    - condition: promotion chain broken (identity mismatch)
+      next: halt release formation; return to SP-13 or rebuild
+
+  exceptions:
+    - id: E-no-artifact-change
+      rule: pure source / config / docs changes degrade artifact identity to source
+            revision set + config snapshot binding; all other semantics apply unchanged
+    - id: E-platform-materialization-unavoidable
+      rule: mobile / firmware / multi-platform distribution produces platform-specific
+            identities; each registered with its own delta and re-evaluation —
+            "same source" never covers them in one stroke
+    - id: E-emergency
+      rule: provenance depth compressible to the normal floor under Ch8 fast-path;
+            baseline pinning, identity honesty and delta evaluation never waived;
+            reconciled afterwards via SP-21 / SP-19
+
+  evidenceByWork:
+    natural:
+      - CI / build system records, digests, lockfiles, artifact registry entries
+    extraOnlyFor: [build-baseline-record, reproducibility-fact, promotion-record,
+                   materialization-delta-record, provenance-coverage-boundary]
+    rule: identity claims rest on digest comparison, not narration
+
+  currentUpdateObligation:
+    writesCurrent: false
+    note: >
+      Build / artifact / provenance work produces facts; it updates no current.
+      Entry into candidate, release and target environments is decided by SP-13 /
+      SP-15 / SP-17 respectively; current commits go through SP-19.
+
+  theoryTrace:
+    part1: [GI-05, GI-13]
+    part2: [build-what, release-what-boundary]
+    part3: [source-build-artifact-where]
+    part4: [ch5-three-build-levels-68-72, ch5-requirements-277-296-304,
+            ch6-108-109-provenance-depth, ch6-139-140-baseline-requirements,
+            ch7-release-formation-8-17, ch7-minimum-requirements-139-shoulds,
+            ch8-emergency]
+
+  executableAssets: [EA-10, EA-11, EA-07, EA-13]
+  assetRule: >
+    Tooling fits: pinning baselines, executing builds, computing digests, emitting
+    provenance, diffing identities. Tooling does not fit: build-level judgement,
+    materialization delta risk evaluation, promotion decisions, inheritance
+    conclusions.
+
+  referenceProfiles:
+    - id: generic-layer
+      bindings:
+        applies: all profiles share operation contract / theory trace / evidence / control semantics
+    - id: delivery-shape
+      bindings:
+        rule: shape decides artifact set composition and promotion chain form
+              (CLI multi-platform binaries + checksum manifest; SDK multi-language
+              package distribution records)
+    - id: risk-overlay
+      bindings:
+        rule: overlay decides provenance depth and reproducibility strictness;
+              concrete mappings registered in group-6
+
+  example:
+    ref: CHG-WO-142-C2-RELEASE-1.9.0
+    continues: SP-13 example (C2 accepted), leads into SP-15 (release 1.9.0)
+    highlight: >
+      After the C2 fix, a candidate-grade build pins its baseline (three-repo
+      revision set, lockfile anchor, Dockerfile rev7, builder image fingerprint)
+      and produces image sha256:9f2c…, re-run digest-identical. Normal
+      supply-chain risk: provenance is CI run id + revision set + digest + test
+      report — SLSA not mandated. Release formation for WO-1.9.0 references the
+      same digest, never rebuilds. Pre-release signing wraps a new package
+      identity around unchanged content: the delta evaluation records the
+      inheritance basis (envelope carries no executable change); where a platform
+      requires repackaging into a different format with a new executable
+      identity, a delta record goes to SP-13, whose re-evaluation keeps
+      functional / contract evidence applicable and adds only an install-layer
+      smoke. A proposal to "rebuild with fresher dependencies before release" is
+      rejected: that is a new artifact — verify it as a new candidate or drop it.

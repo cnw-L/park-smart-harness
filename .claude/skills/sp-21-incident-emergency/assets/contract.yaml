@@ -1,0 +1,466 @@
+# SP-21 Incident / Emergency — Operation Contract
+# Machine-loadable mirror of 第五篇-SP21-IncidentEmergency-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-21
+  name: Incident / Emergency
+  status: sealed                   # 2026-09-01 group-5 audit PASS AFTER REPAIR (P1 x2 applied) + regression PASS
+  version: 1.0.0
+  normativeSource: 第五篇-SP21-IncidentEmergency-正式操作规程.md
+  singleResponsibility: >
+    Organize a live incident / high-urgency event into controlled emergency
+    engineering facts: open the incident record and make the emergency
+    determination (real harm ongoing or expanding), establish the emergency
+    mitigation objective, record the emergency compression profile (which
+    obligations compressed / substituted / deferred, accepted by whom),
+    fixate the minimum non-disappearing facts and action trace, form the
+    emergency stabilization fact, and after stabilization execute the
+    emergency reconciliation (item-by-item deferred-obligation disposition,
+    successor determination, Ch9 input preparation). Core fact: the
+    Emergency Record.
+
+spec:
+
+  triggers:
+    - id: T-incident-received               # alert / user report / vulnerability
+                                               # discovery / data issue / dependency
+                                               # break -> incident record + emergency
+                                               # determination (Ch8 §8; P2 Ch12 §3)
+    - id: T-emergency-compressed-execution   # mitigation objective established,
+                                               # compression profile recorded,
+                                               # extreme-emergency act-first-record-later
+                                               # (§9-16)
+    - id: T-emergency-reconciliation         # post-stabilization verification and formal
+                                               # disposition — deferred obligations,
+                                               # temporary-exception exit, successor
+                                               # determination, Ch9 / SP-19 input
+                                               # preparation (§22-25)
+    - id: T-incident-follow-up               # postmortem (sized by impact), executable
+                                               # action items, recurrence risk and
+                                               # learning retention (P2 §24-26)
+                                               # — JG-08: SP-21 -> SP-18 -> SP-17 ->
+                                               # SP-19; permanent fix -> SP-03
+  redLine: >
+    Emergency is not an alias for "high-priority requirement" (§8) — the only
+    criterion: waiting for the full normal pre-process would let real harm,
+    risk, or critical unavailability materially persist or expand. Emergency
+    compression must be explicitly recorded (§11 [BASELINE]) — "it was urgent
+    at the time" is not, weeks later, a reason for obligations to vanish.
+
+  inputs:
+    required:
+      - name: incident_signals
+        type: reference-set           # alerts / user reports / security advisories /
+                                      # data-validation anomalies / dependency
+                                      # notifications (EA-15 face)
+      - name: runtime_exposure_facts
+        type: reference-set           # SP-15: environment current runtime state,
+                                      # rollout slice status; SP-16: flag /
+                                      # kill-switch asset state
+      - name: affected_surface_facts
+        type: reference-set           # immediately determinable facts on harmed
+                                      # users / data / security boundary /
+                                      # compliance face (partial but sufficient
+                                      # for mitigation, §107)
+    conditional:
+      - name: recovery_asset_facts
+        type: reference-set           # SP-18: anchor / repair scripts / rehearsal
+                                      # state (basis of "rollback path checked")
+        appliesWhen: recovery-class mitigation considered
+      - name: change_context_facts
+        type: reference-set           # related OPEN changes, recent release / rollout
+                                      # facts (incident attribution input)
+        appliesWhen: incident possibly change-attributable
+
+  outputs:
+    primary:
+      - name: incident_record
+        fields: [inc-id, trigger-facts, timeline, severity, priority]
+                                      # severity and priority recorded separately
+                                      # (P2 §21-22)
+      - name: emergency_determination_and_change_binding
+        rule: "determination rationale per §8 criterion; the emergency change opens
+              under the same change identity (§7: same change model)"
+      - name: emergency_mitigation_objective
+        rule: what danger must stop first (§9) — not the permanent design
+      - name: emergency_compression_profile
+        fields: [normal-obligation, current-status, why-compressed,
+                 temporary-substitute, risk-accepted-by-whom,
+                 must-do-after-stabilization, owner]
+                                      # seven elements (§11)
+      - name: emergency_action_trace_minimum_facts
+        rule: §15 eight questions + §13 nine items — operational trace for
+              act-first-record-later, bound to a stable change identity as soon
+              as feasible
+      - name: emergency_stabilization_fact
+        rule: mitigation objective achieved via applicable immediate evidence
+              (§16) — carries no "fixed" semantics
+      - name: emergency_deferred_obligation_list
+        rule: compressed / deferred obligations that must receive explicit
+              post-hoc disposition, item by item (§18)
+      - name: emergency_reconciliation_artifacts
+        rule: §22 ten items — actual-change reconstruction, impact completion,
+              design confirmation, verification completion, runtime·data check,
+              temporary-face review, exception disposition, postmortem link,
+              permanent fix or successor, Ch9 input
+      - name: postmortem_follow_up
+        rule: action items (owner + priority + verifiable end state) +
+              recurrence-risk registration (P2 §24-26); maintenance-side
+              ledger entries handed to SP-20
+    nonOutputs:
+      - recovery-means-execution                      # SP-18
+      - validation-verdicts                           # SP-17
+      - execution-control-authority-token             # SP-15
+      - permanent-fix-implementation-and-verification # SP-06 / SP-13
+      - calibration-scoped-current-update-closure     # SP-19 (Ch9)
+      - maintenance-follow-up-ledger-face             # SP-20
+
+  invariants:
+    - id: emergency-uses-same-change-model
+    - id: emergency-determination-has-section-8-basis
+    - id: compression-explicitly-recorded
+    - id: operational-trace-survives-act-first
+    - id: stabilized-is-not-fixed
+    - id: deferred-is-not-waived
+    - id: evidence-gap-never-rewritten-as-pass
+    - id: temporary-exception-must-exit
+    - id: reconciliation-barrier-blocks-closure
+
+  actions:
+    - id: A1
+      name: Incident receipt and emergency determination
+      controlMode: engineering-decision
+      rules:
+        - open the incident record (INC + trigger facts + timeline); separate
+          severity (how bad the consequence) from priority (how fast to act —
+          shaped by customer impact / security / workaround / frequency / cost
+          of delay; high severity does not automatically mean immediate code
+          change, P2 §21)
+        - triage looks at user impact / data / security / blast radius /
+          workaround / recovery cost at minimum (P2 §22)
+        - emergency determination written against the §8 criterion; if it fails,
+          route to the normal change chain (SP-03 onward) — the incident record
+          still stands
+    - id: A2
+      name: Mitigation objective establishment
+      controlMode: engineering-decision
+      rules:
+        - state what danger must stop first (stop duplicate charge / stop data
+          loss / restore login / disable vulnerable endpoint, §9)
+        - separate symptom / immediate cause / contributing factor / latent
+          design problem (P2 §23) — mitigation faces the objective, not the
+          permanent design; causal layering waits for reconciliation and
+          follow-up
+    - id: A3
+      name: Compression profile recording
+      controlMode: automation-assisted
+      rules:
+        - "record per the seven elements: which normal obligations satisfied /
+          compressed / why / with what temporary substitute / risk accepted by
+          whom / what must be done after stabilization / owner (§11)"
+        - "\"emergency, skip tests\"-style records are violations — the profile
+          exists to separate temporarily-deferred from permanently-waived (§12)"
+    - id: A4
+      name: Stabilization action execution routing
+      controlMode: engineering-decision
+      rules:
+        - recovery-class means (rollback / rollforward / disable feature /
+          restore / compensation / traffic shift) route to SP-18 (JG-08);
+          no-software-change operational mitigation splits by behavioral
+          impact — restart / rate-limit style actions that do not change
+          user-visible behavior run under existing operations-domain rules and
+          enter the action trace (A5); traffic cut / flag-off style actions
+          that materially change user behavior are target-changing actions
+          under SP-15 control with SP-16 asset semantics (Ch7 §87, §114);
+          urgent fixes needing new software content go the compressed change
+          path — implementation SP-06 / verification SP-13 at compressed
+          timing with mandatory post-completion (the obligation held by
+          reconciliation)
+        - a hotfix must know which release it is based on (affected release /
+          fix source / target release / forward-port or backport /
+          compatibility, P2 §20) — cherry-picking from main without this
+          creates new drift
+        - target-changing actions remain constrained by the SP-15 authority
+          token
+    - id: A5
+      name: Action trace and minimum-fact fixation
+      controlMode: automation
+      rules:
+        - every material emergency action answers §15's eight questions
+          (who / when / which target / what action / which
+          artifact·config·command / pre-action observation / post-action
+          observation / persistent side effect); immutable audit logs may be
+          referenced rather than copied
+        - "act-first-record-later: operational trace kept contemporaneously,
+          bound to a stable change identity as soon as feasible (§13-14)"
+    - id: A6
+      name: Stabilization fact formation and state semantics
+      controlMode: automation-assisted + engineering-decision
+      rules:
+        - mitigation objective achieved via applicable immediate evidence
+          (duplicate stops / core flow works / error rate stable) -> emergency
+          stabilization fact (§16)
+        - "state expressed truthfully: stabilized != fixed (§17), change stays
+          OPEN + ACTIVE / PAUSED; evidence gaps expressed as NOT_READY /
+          deferred, never rewritten as PASS (§21)"
+        - recovery-action validation facts collected by SP-18, verdicted by
+          SP-17
+    - id: A7
+      name: Emergency reconciliation
+      controlMode: engineering-decision
+      rules:
+        - execute §22's ten items after stabilization, ending in identifying
+          calibration / current-update obligations and preparing the Ch9
+          input (never writing "calibration complete" in advance)
+        - reconciliation barrier check (§24) + the five minimum pre-closure
+          questions (§25) pass before handoff to SP-19
+        - "successor path (§23): what is complete / what transfers / who the
+          successor is / whether it accepts — transfer must be traceably
+          accepted by the successor"
+    - id: A8
+      name: Postmortem and follow-up
+      controlMode: engineering-decision
+      rules:
+        - postmortem size tailored to impact (P2 §25); action items carry
+          owner + priority + verifiable end state (P2 §24) — "be more careful
+          / test more / monitor more" is not an action
+        - blameless analysis targets system conditions rather than blaming
+          individuals, while retaining accountability (P2 §26)
+        - recurring-incident cumulative cost enters maintenance priority
+          signals (P2 §62, SP-20 domain); follow-up ledger entries handed to
+          SP-20; the permanent-fix change opens via SP-03
+
+  gates:
+    - id: G-SP21-01
+      type: hard-gate
+      rule: emergency-continues-same-change-identity-baseline-evidence-authority-model
+      note: no second state machine, no escape from engineering process   # §7,
+            # P2 §19, §131
+    - id: G-SP21-02
+      type: hard-gate
+      rule: emergency-determination-requires-section-8-criterion
+      note: high-priority requirement / customer pressure / boss's deadline
+            never constitutes an emergency   # §8
+    - id: G-SP21-03
+      type: hard-gate
+      rule: emergency-compression-explicitly-recorded
+      note: seven-element profile covering compressed / substituted / deferred
+            obligations   # §11-12, §131
+    - id: G-SP21-04
+      type: hard-gate
+      rule: act-first-record-later-preserves-reconstructable-operational-trace
+      note: bound to a stable change identity as soon as feasible; unrecorded
+            permanent production modification never allowed   # §13-15, §131
+    - id: G-SP21-05
+      type: hard-gate
+      rule: stabilization-is-not-permanent-fix-verification-or-closure
+      note: the ≠ chain holds at all times   # §10, §16-17
+    - id: G-SP21-06
+      type: hard-gate
+      rule: deferred-obligations-never-waived-by-emergency-alone
+      note: waiver requires explicit authority / rationale / risk / scope /
+            expiry-when-needed (§18-19); temporary exceptions require owner /
+            scope / exit-or-expiry / recheck (§20)   # §131
+    - id: G-SP21-07
+      type: hard-gate
+      rule: evidence-gaps-never-rewritten-as-pass
+      note: correct expressions = NOT_READY / evidence gap / deferred
+            obligation / authorized exception   # §21, §131
+    - id: G-SP21-08
+      type: hard-gate
+      rule: reconciliation-complete-or-obligations-transferred-to-accepted-successor
+      note: reconciliation barrier unsatisfied -> no CLOSED + COMPLETED
+            # §22-24, §131
+    - id: G-SP21-09
+      type: hard-gate
+      rule: gate-zeroing-classification-requires-resolvable-rationale
+      note: covers not-an-emergency-just-fix / fixed-without-recording /
+            internal-incident-no-postmortem / recovered-so-closeable;
+            re-challengeable by SP-05 / SP-13 / group audit   # B1
+
+  passExit:
+    equals: >
+      Incident / emergency obligation completed (bound to the INC and the
+      emergency change): mitigation objective achieved with stabilization fact
+      and immediate evidence on record + compression profile and action trace
+      complete (or bound to a stable identity) + reconciliation complete:
+      deferred obligations each completed / transferred (successor accepted) /
+      formally disposed; temporary exceptions exited or handed to governance +
+      follow-up action items in writing (owner + priority + verifiable end
+      state), maintenance-side ledger entries handed to SP-20 + Ch9 input
+      ready -> handoff to SP-19 (calibration / closure)
+    doesNotMean: [permanent-fix-delivered, recovery-executed, validation-verified,
+                  change-closed, follow-up-actions-all-complete]
+
+  returnPaths:
+    - condition: mitigation actions cannot achieve the objective
+      next: switch means (SP-18 candidate re-selection) / escalate incident
+            level and response face
+    - condition: post-stabilization validation fails
+      next: SP-17 path + new recovery attempt (SP-18); evidence gap recorded
+            truthfully, never rewritten as PASS
+    - condition: deferred obligations unclaimed
+      next: escalate to project owner; never silently waived
+    - condition: permanent fix evolves into new architecture / long-term scope
+      next: successor change (§23); transfer traceably accepted by the successor
+    - condition: root cause points to a material design problem
+      next: SP-05 (via the permanent-fix change)
+    - condition: root cause points to maintenance-risk face (dependency / EOL / debt)
+      next: SP-20 (ledger and capacity disposition)
+    - condition: recovery material basis missing (anchor invalid / no backup)
+      next: SP-18 forward-fix path + SP-20 retention-improvement registration
+    - condition: reconciliation finds actual modification diverging from records
+      next: reconstruct the facts first (§22), divergence enters evidence-gap
+            disposition
+
+  exceptions:
+    - id: E-extreme-emergency-act-first
+      rule: "when harm is ongoing and fully completing the record would directly
+            delay safe mitigation, the minimal safe action may execute first —
+            operational trace kept contemporaneously, bound to a change identity
+            immediately after (§14). The boundary is unchanged: no unrecorded
+            permanent production modification"
+    - id: E-temporary-emergency-exception
+      rule: temporarily introduced auth bypass / disabled validation / manual
+            operation / temporary flag / reduced redundancy must carry owner /
+            scope / risk / expiry-or-exit-condition / recheck trigger (§20) —
+            otherwise temporary measures silently become permanent
+            architecture. Temporary-flag asset semantics = SP-16; exit
+            governance in the reconciliation review
+    - id: E-small-known-incident
+      rule: incidents without major user impact, data/security involvement, or
+            novel failure modes need only an incident note + root cause + fix /
+            follow-up (P2 §25) — recurrence risk and important learning never
+            vanish; recurrence upgrades to a full postmortem
+    - id: E-successor-split
+      rule: when the permanent fix evolves into new architecture / long-term
+            scope / new owner / independent delivery boundary, a successor
+            change is created (§23, §110); the original emergency change may
+            enter its own closure only after stating what completed / what
+            transferred and the successor's traceable acceptance
+
+  evidenceByWork:
+    natural:
+      - incident record (trigger facts + timeline + severity / priority)
+      - emergency determination rationale (§8 criterion in writing)
+      - emergency compression profile (seven elements)
+      - emergency action trace (§15 eight questions / audit-log references)
+      - emergency stabilization fact (immediate evidence)
+      - deferred-obligation list and item-by-item disposition records
+      - temporary-exception registration and exit records
+      - emergency reconciliation artifacts (incl. successor transfer and
+        acceptance facts)
+      - postmortem / incident note + action items (owner + priority +
+        verifiable end state)
+    extraOnlyFor: [gate-zeroing-classification-rationale,
+                   waiver-decision,
+                   successor-transfer-decision]
+    rule: all other evidence emerges naturally from the work
+
+  currentUpdateObligation:
+    writesCurrent: false
+    boundaries:
+      - runtime state facts during the emergency are committed by SP-15 at
+        execution time
+      - "calibration / current-update obligations identified by reconciliation
+        move to SP-19 as Ch9 input (§22: never write \"calibration identified\"
+        as \"calibration complete\" in advance)"
+      - design / structure revisions arising from incident learning belong to
+        SP-19 / SP-05
+
+  theoryTrace:
+    part1: [GI-03, GI-05, GI-06, GI-13]   # evidence gap != pass is GI-06 applied;
+                                          # minimum non-disappearing facts are the
+                                          # extreme-case floor of GI-05
+    part2: [p2-ch12-3-incident-mitigation-emergency-boundaries,
+            p2-ch12-18-26-emergency-maintenance-hotfix-severity-postmortem,
+            p2-ch12-56-57-workaround-temporary-mitigation,
+            p2-ch12-62-repeated-incident]
+    part3: [p3-ch3-42-60-64-mixed-recovering-state-truthful,
+            p3-ch3-67-recovery-runbook-antipattern,
+            p3-ch8-61-current-drift-anchor]
+    part4: [ch8-7-25-emergency-core-semantics,
+            ch8-105-110-workorder-inc77-emergency-example,
+            ch8-131-134-minimum-requirements-and-fields,
+            ch9-closure-interface]
+    journey: [JG-08]     # SP-21 -> SP-18 -> SP-17 -> SP-19; permanent fix -> SP-03
+
+  executableAssets: [EA-15, EA-16]
+  assetRule: >
+    tooling fits: incident record / timeline / compression profile / deferred
+    list maintenance, action trace and audit-log referencing, alert signal
+    collection. Tooling does not fit: emergency determination, mitigation
+    objective selection, reconciliation / successor decisions, waiver
+    decisions, postmortem analysis — "monitoring is green again" is never a
+    stabilization verdict; tool output is a signal, not a verdict (GI-07). A
+    filled template is never decision evidence (GI-06).
+
+  referenceProfiles:
+    - id: RP-ONLINE-API-PY-GH
+      bindings:
+        incident_chain: alert (EA-15) -> incident record (issue tracker) ->
+                        emergency change (same record system)
+        action_trace: deployment-platform audit log + GitOps commit references
+        postmortem: document + action items as issues (owner / due / verifiable
+                    end state)
+    - id: RP-B-CLI   # pending-definition (group-6)
+      bindings:
+        blast_radius: distributed copies — no remote mitigation; mitigation
+                      narrows to stop-distribution / announcement + fast
+                      patch version
+        kill_switch: limited; forms without remote switches registered in
+                     SP-16, mitigation means tailored to those registered facts
+    - id: RP-C-SDK   # pending-definition (group-6)
+      bindings:
+        incident_face: consumer-side compatibility break — mitigation = patch
+                       version + migration guidance release
+        irrevocability: released versions cannot be recalled; reconciliation's
+                        deferred face includes consumer-migration tracking
+
+  example:
+    ref: CHG-WO-142
+    continues: group-5 SP-16 example (reason capability in progressive
+               exposure) and P4 Ch8 §105-110 (native INC-77 + CHG-WO-E17
+               instance), expanded here into the SP-21 action chain
+    highlight: >
+      Production-US alert: transfer action triggers duplicate notification,
+      user impact ongoing (EA-15 signal). INC-77 opened; determination: waiting
+      for the full normal process would let harm expand -> emergency
+      established (§8 rationale in writing); emergency change CHG-WO-E17 opens
+      under the same change identity. Severity = high (visible erroneous
+      notifications); priority = immediate (no workaround) — recorded
+      separately (P2 §21). Mitigation objective: stop duplicate notification
+      while keeping core transfer available (§9). Compression profile: full
+      root cause / architecture review / full regression deferred; immediate
+      impact partial but sufficient; rollback path checked (SP-18 asset
+      fact); critical smoke required now — the now/later boundary recorded,
+      not "emergency, skip tests" (§107). Execution routing: the fastest safe
+      action = disable new notification path (no-software-change flag
+      disable: asset = SP-16 kill-switch-class asset, execution = SP-15
+      target-changing action control + SP-18 disable-feature means); no
+      notification-architecture rework under incident pressure. Trace: the
+      disable action's eight questions on record (who / when / Production-US /
+      flag flip / pre-post error-rate comparison / no persistent side
+      effect); audit log referenced (§15). Stabilization: duplicate stops +
+      core transfer works + error rate stable -> emergency stabilization fact
+      (§16); state truthful — stabilized != fixed, CHG-WO-E17 stays OPEN +
+      ACTIVE (§17); the unrun full regression = deferred, never rewritten as
+      PASS (§21). Reconciliation: ten items post-stabilization — root cause =
+      notification race (symptom / cause layered, P2 §23); deferred list =
+      root cause / full impact / permanent design fix / regression
+      verification / remove temporary flag / calibration (§109); the barrier
+      blocks CLOSED + COMPLETED until cleared (§24); if the permanent fix is
+      just the same notification race fix it stays in E17 via SP-06 / SP-13
+      completion; if it evolves into an independent notification-service
+      rework, successor CHG-WO-E18 is created with traceable acceptance
+      (§110); the Ch9 input (calibration / current-update obligation list)
+      prepared for SP-19. Follow-up: full postmortem (major user impact, P2
+      §25); action item = add notification idempotency guard, owner =
+      work-order-service, done when = load test + production metric confirms
+      duplicate rate = 0 (P2 §24) — not "monitor more"; recurrence risk
+      registered into SP-20's maintenance-cycle signals (P2 §62); temporary
+      flag removal links to the SP-16 cleanup condition.

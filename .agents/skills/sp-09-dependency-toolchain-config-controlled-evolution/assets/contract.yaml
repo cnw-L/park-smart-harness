@@ -1,0 +1,363 @@
+# SP-09 Dependency / Toolchain / Config Controlled Evolution — Operation Contract
+# Machine-loadable mirror of 第五篇-SP09-DependencyToolchainConfig-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-09
+  name: Dependency / Toolchain / Config Controlled Evolution
+  status: sealed                   # 2026-09-01 group-4 audit PASS AFTER REPAIR + regression 1712 citations PASS AFTER REPAIR (REPAIR-1 applied)
+  version: 1.0.0
+  normativeSource: 第五篇-SP09-DependencyToolchainConfig-正式操作规程.md
+  singleResponsibility: >
+    Run the controlled professional evolution of a change touching dependencies /
+    toolchain / configuration: establish dependency identity and resolution facts
+    (why introduced / which version / who owns / transitive / risk), guarantee
+    version determinism and build-input completeness, manage the code / config /
+    secret separation with traceable injection, and treat important config
+    changes as controlled changes. The same source baseline must determine the
+    actually used dependency version — never re-resolve randomly per build;
+    config is itself a controlled engineering fact; a secret is never ordinary
+    source code.
+
+spec:
+
+  triggers:
+    - id: T-dependency-add-upgrade-remove        # incl. resolution mechanism change (JG-05)
+    - id: T-toolchain-build-generator-change     # compiler / build tool / codegen (P2 Ch11 §6, Ch9 §25)
+    - id: T-config-secret-surface-change         # new config / injection change /
+                                                 # config-artifact relation / important
+                                                 # config-flag change (Ch9 §19-20, Ch11 §16-17/§42)
+    - id: T-dependency-config-debt-governance    # stale deps / permanent pins /
+                                                 # unowned deps / hidden env divergence (Ch9 §19, §23)
+  redLine: >
+    A secret is never handled as ordinary source: no hard-coding, no commits, no
+    baking into distributable artifacts, no logging or error returns (Ch9 §20,
+    Ch11 §17). Accidental entry into version history is not fixed by deleting
+    the file — credential rotation and security handling are required
+    (disposition = SP-10).
+
+  inputs:
+    required:
+      - name: dependency_toolchain_config_impact
+        type: ref                     # SP-04: which dependency / toolchain / config surfaces
+      - name: current_dependency_facts
+        type: reference-set           # manifest / lock / resolved version /
+                                      # base image / toolchain version (Ch11 §6)
+      - name: current_config_secret_surface
+        type: reference-set           # config items, injection means, secret
+                                      # reference / required secret schema /
+                                      # injection mechanism (Ch11 §26, Ch1 §7.3)
+      - name: build_definition_state
+        type: ref                     # versioned build definition (Ch11 §5, §86.2)
+    conditional:
+      - name: generated_code_relations
+        type: reference-set           # source artifact / generator+version /
+                                      # commit? / how to regenerate (Ch9 §25)
+        appliesWhen: change touches generated code
+
+  outputs:
+    primary:
+      - name: dependency_decision_record
+        fields: [why-needed, which-version, who-owns-usage, transitive-dependencies,
+                 security-maintenance-risk, benefit-vs-long-term-cost]   # Ch9 §21, §23
+      - name: resolution_build_input_facts
+        rule: same source baseline determines actual dependency version (lock /
+              resolved version / manifest / repository / checksum, Ch9 §22,
+              Ch1 §7.2); build baseline dependency / base image /
+              compiler-toolchain face (Ch11 §6, §86.2)
+      - name: toolchain_generator_registry
+        rule: toolchain versions by risk; generated code five elements (Ch9 §25)
+      - name: config_secret_governance_facts
+        rule: code/config/secret separation landed (Ch9 §19); config as controlled
+              engineering fact (Ch11 §16); secret reference / schema / injection
+              traceable (Ch11 §26)
+      - name: config_change_record
+        fields: [identity-revision, change-reason, authorization, verification,
+                 target-state]   # Ch11 §42
+      - name: dependency_config_debt
+        fields: [debt-item, risk, owner, cleanup-condition]
+    nonOutputs:
+      - vulnerability-response-or-security-policy-execution   # SP-10
+      - code-implementation                    # SP-06
+      - verification-verdicts                  # SP-11 / SP-12 / SP-13
+      - release-deployment-facts               # SP-15 / SP-17
+      - current-updates                        # SP-19
+
+  invariants:
+    - id: same-baseline-determines-dependency-version
+    - id: dependency-is-build-input
+    - id: config-is-controlled-engineering-fact
+    - id: secret-never-ordinary-source
+    - id: generated-output-traceable-to-generator-input
+    - id: sp09-identity-resolution-vs-sp10-security-control
+
+  actions:
+    - id: A1
+      name: Confirm entry and touch surface
+      controlMode: automation-assisted
+      rules:
+        - "enumerate touched surfaces: dependency (add / upgrade / remove /
+          resolution mechanism) / toolchain (compiler / build tool / generator) /
+          config-secret (items / injection / config-artifact relation)"
+        - "B1 re-challenge: upstream dev-only-no-risk / toolchain-need-not-be-pinned /
+          not-a-release classifications without resolvable rationale return to SP-04"
+    - id: A2
+      name: Dependency add / upgrade / remove decision
+      controlMode: engineering-decision
+      rules:
+        - "five questions registered (Ch9 §21) + benefit vs long-term cost (§23:
+          security surface / upgrade cost / build cost / conflict)"
+        - assess third-party trustworthiness / maintainability / known-risk face
+          (§24); security disposition needs hand off to SP-10 — never executed
+          here; identity / resolution facts stay here
+    - id: A3
+      name: Version determinism and build input
+      controlMode: guardrail + engineering-decision
+      rules:
+        - "establish determinism mechanism (Ch9 §22, Ch1 §7.2: lock / resolved
+          version / manifest / repository / checksum by ecosystem; goal = same
+          source baseline resolves deterministically)"
+        - dependency / base image / compiler-toolchain (by risk) enter build
+          baseline (Ch11 §6); formal build satisfies §86.2 [MUST][BASELINE] —
+          build definition / dependency-base image / output-affecting build
+          parameters determinable, never relying on untraceable local state
+        - "\"toolchain need not be pinned by risk\" is a gate-zeroing judgment and
+          carries rationale (B1)"
+    - id: A4
+      name: Toolchain / generator governance
+      controlMode: engineering-decision
+      rules:
+        - register toolchain versions and upgrade paths (by risk, Ch11 §6)
+        - "generated code five elements (Ch9 §25): source artifact / generator+
+          version / generated output / commit-or-not (by build / tooling choice) /
+          how to regenerate; output traceable to generator input and process;
+          hand-edited generated files identified and corrected"
+    - id: A5
+      name: Config / secret separation and injection governance
+      controlMode: engineering-decision + guardrail   # secret scans mechanical
+      rules:
+        - "land code / config / secret separation (Ch9 §19): source env branches /
+          hard-coded values identified and migrated to controlled config"
+        - "config itself managed as controlled engineering fact (Ch11 §16: never an
+          unmanaged manual input for the sake of artifact immutability)"
+        - "secret face (Ch9 §20, Ch11 §17, §26): never in source / artifact /
+          logs / errors; secret reference / required secret schema / injection
+          mechanism traceable; developers know local / CI / production
+          acquisition and injection (Ch1 §7.3)"
+        - secret found in version history -> hand to SP-10 for rotation and
+          security disposition; this procedure registers the fact
+    - id: A6
+      name: Config change as controlled change
+      controlMode: engineering-decision
+      rules:
+        - "important config / flag change establishes §42 five elements:
+          identity-revision / change reason / authorization / verification /
+          target state"
+        - "\"this config change is not a release\" is a gate-zeroing judgment and
+          carries rationale (B1); importance judged by runtime behavior impact
+          (binary unchanged != unchanged)"
+        - release orchestration hands off to SP-15 / SP-17; this procedure
+          guarantees controlled elements complete
+        - further flag lifecycle governance hands to SP-16 pending-definition
+          (group-5); until then covered by SP-15 §11.3 target-changing action
+    - id: A7
+      name: Compatibility and cross-boundary judgment
+      controlMode: engineering-decision
+      rules:
+        - "judge whether the dependency / config change touches cross-boundary
+          commitments: config schema / externally exposed dependency surface
+          already a contract -> compatibility evolution hands off to SP-07 (this
+          procedure provides fact input); purely internal evolution stays here"
+        - judgment carries rationale (B1)
+    - id: A8
+      name: Review / verification handoff and debt registration
+      controlMode: engineering-decision
+      rules:
+        - review = SP-12 (dependency decision record as review material);
+          behavior verification = SP-11 / SP-13; determinism may be verified via
+          reproducible-build spot checks with SP-14 build / provenance face
+        - "register dependency / config debt: stale dependencies / permanent pins /
+          unowned dependencies / hidden environment divergence — risk + owner +
+          cleanup condition, against permanentization"
+
+  gates:
+    - id: G-SP09-01
+      type: hard-gate
+      rule: same-source-baseline-determines-dependency-version   # Ch9 §22, Ch1 §7.2, Ch11 §86.2
+    - id: G-SP09-02
+      type: hard-gate
+      rule: formal-build-determines-definition-dependency-parameters
+      note: never relies on untraceable local state   # Ch11 §86.2, §6
+    - id: G-SP09-03
+      type: hard-gate
+      rule: secret-never-hardcoded-committed-baked-logged   # Ch9 §20, Ch11 §17
+    - id: G-SP09-04
+      type: hard-gate
+      rule: env-divergence-never-hidden-in-source; config-secret-injection-traceable
+      note: # Ch9 §19, Ch11 §16, §26, Ch1 §7.3
+    - id: G-SP09-05
+      type: hard-gate
+      rule: important-config-flag-change-is-controlled-change   # Ch11 §42 five elements
+    - id: G-SP09-06
+      type: hard-gate
+      rule: important-dependency-change-requires-five-questions   # Ch9 §21
+    - id: G-SP09-07
+      type: hard-gate
+      rule: generated-output-never-detached-from-source   # Ch9 §25
+    - id: G-SP09-08
+      type: hard-gate
+      rule: no-sp09-sp10-mutual-coverage
+      note: security disposition (vulnerability response / rotation / supply-chain
+            policy) never executed here in place of SP-10; identity / resolution
+            never administered by SP-10   # Ch9 §24
+    - id: G-SP09-09
+      type: hard-gate
+      rule: gate-zeroing-classification-requires-resolvable-rationale
+      note: covers dev-only-no-risk / toolchain-need-not-be-pinned /
+            config-change-not-a-release; re-challengeable by SP-05 / SP-13 /
+            group audit   # B1
+
+  passExit:
+    equals: >
+      Dependency / Toolchain / Config Evolution Plan established (bound to source
+      baseline): five-question record and version determinism mechanism per
+      touched dependency + build input face complete (dependency / base image /
+      toolchain by risk) + code-config-secret separation landed with traceable
+      injection + when applicable: config change controlled elements complete,
+      generator five elements explicit, cross-boundary judgment with rationale
+      -> handoff to SP-06 (implementation) / SP-10 (security disposition) /
+      SP-15 (config release orchestration)
+    doesNotMean: [vulnerabilities-disposed, verification-passed,
+                  config-change-released, current-updated]
+
+  returnPaths:
+    - condition: version determinism cannot be established (ecosystem / mechanism limits)
+      next: select an equivalent determinism mechanism or upgrade the toolchain;
+            never give up with "the ecosystem is like this" (Ch1 §7.2 requires
+            deterministic results, not specific tools)
+    - condition: dependency risk unacceptable
+      next: alternative / small in-house tool / removal; security-face disputes
+            hand to SP-10
+    - condition: touches cross-boundary commitment
+      next: compatibility evolution hands to SP-07 (with fact input)
+    - condition: secret already in version history
+      next: hand to SP-10 for rotation and security disposition; this procedure
+            registers the fact, never deletes history to mask
+    - condition: material design problem
+      next: SP-05
+    - condition: config change release orchestration failed
+      next: SP-15 / SP-17 path
+
+  exceptions:
+    - id: E-no-lockfile-ecosystem
+      rule: Ch9 §22 does not force lock files on all languages; resolved-version
+            records / controlled artifact repository / checksum or equivalent must
+            still achieve same-baseline determinism; chosen mechanism and
+            determinism evidence registered (B1)
+    - id: E-low-risk-toolchain-unpinned
+      rule: compiler / toolchain entering the build baseline is by-risk (Ch11 §6);
+            low-risk projects may not pin toolchain versions, but the
+            classification carries rationale and release-artifact-to-source
+            traceability (Ch11 §86.1) is unaffected
+    - id: E-one-off-internal-tool
+      rule: one-off / internal tool dependency governance may simplify by risk
+            (five questions informal); secret separation and version determinism
+            floors never exempted; the one-off / internal classification carries
+            rationale (B1)
+
+  evidenceByWork:
+    natural:
+      - dependency decision record (five questions + cost assessment)
+      - lock / manifest / resolved version facts (in version control)
+      - build baseline dependency / toolchain face
+      - config definitions and secret reference / schema / injection registry
+      - config change record (§42 five elements)
+      - review record (SP-12, revision-bound)
+    extraOnlyFor: [gate-zeroing-classification-rationale,
+                   cross-boundary-judgment-rationale, sp10-handoff-facts]
+    rule: all other evidence emerges naturally from the work
+
+  currentUpdateObligation:
+    writesCurrent: false
+    boundaries:
+      - dependency manifest / lock / config definitions / build definition are
+        engineering facts in version control, evolving with implementation and
+        the delivery chain
+      - environment current runtime state fact updates belong to SP-15
+        (execution-time commits) / SP-17 (accepted release ledger face);
+        project-level current updates belong to SP-19
+      - any formal current baseline migration goes explicitly through SP-19
+
+  theoryTrace:
+    part1: [GI-03, GI-05]
+    part2: [p2-ch1-7.2-dependency-lock, p2-ch1-7.3-config-secret-separation,
+            p2-ch9-19-25-what-authority,     # primary WHAT authority
+            p2-ch11-5-6-build-definition-dependency-input,
+            p2-ch11-16-17-config-artifact-secret,
+            p2-ch11-26-environment-rebuildable,
+            p2-ch11-42-config-change-is-release,
+            p2-ch11-86.1-86.2-build-minimum-must]
+    part3: [source-build-runtime-mapping]    # Ch5 source-build, Ch3 runtime faces
+    part4: [ch3-dependency-config-impact-deepening,
+            ch5-implementation-time-dependency-generated-code]
+    journey: [JG-05]                         # add-or-upgrade dependency / toolchain / config mainline
+
+  executableAssets: [EA-10, EA-13, EA-03]
+  assetRule: >
+    tooling fits: lock / manifest resolution records, determinism re-resolution
+    checks, secret scans, injection reference integrity checks, reproducible-build
+    spot checks. Tooling does not fit: dependency five-question decisions,
+    add/remove judgments, config release classification, cross-boundary
+    judgments. A filled template is never decision evidence (GI-06).
+
+  referenceProfiles:
+    - id: RP-ONLINE-API-PY-GH
+      bindings:
+        dependency_determinism: uv / pip-tools lockfile
+        build_input: lockfile + base image digest
+        config: env vars + versioned config definitions
+        secret: platform injection (reference traceable)
+        config_release: same controlled chain as binary
+    - id: RP-B-CLI   # pending-definition (group-6)
+      bindings:
+        dependency_determinism: lockfile / vendoring
+        config: user config file (path and schema versioned)
+        secret: OS keychain / external injection reference; no server-side env face
+    - id: RP-C-SDK   # pending-definition (group-6)
+      bindings:
+        dependency_minimization: strongest — SDK dependencies enter the consumer's
+                                 dependency tree (§23 weight highest)
+        versioning: version-range declarations instead of lock (lock does not
+                    propagate to consumers)
+        toolchain: generator / toolchain pinned (release reproducibility owned by
+                   the publisher)
+
+  example:
+    ref: CHG-WO-142
+    continues: SP-07 / SP-08 examples (same change's contract and data faces
+               settled); covers dependency introduction, generator governance,
+               and config change
+    highlight: >
+      A lightweight validation library is introduced for transfer-reason
+      structure checks: five questions registered (why / which=v3.4.x resolved /
+      owner=work-order-service / transitive=2 pure-function libs / risk=actively
+      maintained, no known vulnerabilities — no SP-10 disposition needed); the
+      alternative framework (+180 transitive) rejected per §23. Lockfile updated
+      with this change; build baseline = git commit + lockfile + base image
+      digest (Ch11 §6). AsyncAPI codegen for WorkOrderTransferred bumped
+      v6.1 -> v6.3 with generator version registered; generated client not
+      committed, regenerated in CI (§25). TRANSFER_NOTIFY_TIMEOUT 5s -> 10s (a
+      partner notification-channel parameter, unrelated to the "event within 5s
+      of transfer" timing promise promoted in the SP-07 example) is a
+      binary-unchanged runtime behavior change -> config change record per
+      §42 (identity cfg-wo-118 / reason partner network jitter / authorization
+      service owner / verification timeout behavior test / target 10s), release
+      orchestration handed to SP-15; flag lifecycle governance -> SP-16
+      pending-definition (group-5), until then covered by SP-15 §11.3. The
+      category allowed-value list of the structured reason payload (config
+      schema) read by the partner is judged a cross-boundary commitment (same
+      fact setting as the SP-08 / SP-10 examples) -> future evolution handed
+      to SP-07, judgment recorded (B1).

@@ -1,0 +1,382 @@
+# SP-10 Security / Supply Chain Control — Operation Contract
+# Machine-loadable mirror of 第五篇-SP10-SecuritySupplyChainControl-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-10
+  name: Security / Supply Chain Control
+  status: sealed                   # 2026-09-01 group-4 audit PASS AFTER REPAIR + regression 1712 citations PASS AFTER REPAIR (REPAIR-1 applied)
+  version: 1.0.0
+  normativeSource: 第五篇-SP10-SecuritySupplyChainControl-正式操作规程.md
+  singleResponsibility: >
+    Run controlled professional security control for a change touching the
+    security surface: early security requirement recognition, enforcement points
+    truly effective at trusted boundaries, third-party / supply-chain risk
+    disposition, secret security disposition, risk-tiered artifact integrity /
+    provenance / SBOM and release-permission control, and security evidence
+    organization. Security is not a pre-launch scan; UI hide and client
+    validation are not enforcement; dependency identity belongs to SP-09,
+    security disposition to this procedure — never mutually covering.
+
+spec:
+
+  triggers:
+    - id: T-change-touches-security-surface      # via SP-04 security impact; ten
+                                                 # concern classes (P2 Ch4 §18); JG-05
+    - id: T-third-party-security-disposition     # trust / maintainability / known-risk
+                                                 # assessment, vulnerability response (Ch9 §24)
+    - id: T-secret-security-event                # secret in version history / logs /
+                                                 # artifact / errors -> rotation (Ch9 §20)
+    - id: T-release-artifact-supply-chain        # integrity / provenance / SBOM /
+                                                 # signing / archive requirements (Ch11
+                                                 # §49-51); release permission / SoD (§56-57)
+  redLine: >
+    Security requirements must be truly enforced at trusted boundaries
+    (Ch9 §67.6 [MUST][BASELINE]) — never rely solely on UI hide / client
+    validation to protect server-side security requirements; enforcement takes
+    effect at the trusted server or corresponding enforcement point (§40).
+
+  inputs:
+    required:
+      - name: security_impact_conclusion
+        type: ref                     # SP-04: which security surfaces / trust
+                                      # boundaries / depth
+      - name: security_requirement_facts
+        type: reference-set           # applicable items of the Ch4 §18 ten
+                                      # concern classes for this change
+                                      # (recognized before code completion)
+      - name: existing_enforcement_surface
+        type: reference-set           # trusted server / enforcement point state;
+                                      # input validation boundary state (Ch9 §40-41)
+      - name: supply_chain_state
+        type: reference-set           # artifact integrity mechanism / provenance /
+                                      # sbom / signing / release archive (Ch11 §49-51)
+      - name: permission_duty_state
+        type: reference-set           # build / promote / deploy / override-gate /
+                                      # rollback permission face (Ch11 §56-57)
+    conditional:
+      - name: third_party_facts
+        type: ref                     # dependency decision record handed from SP-09
+        appliesWhen: third-party component involved
+
+  outputs:
+    primary:
+      - name: security_requirement_record
+        fields: [applicable-concerns, verifiable-expression-per-concern,
+                 safety-domain-judgment]   # Ch4 §18, §25
+      - name: enforcement_design
+        rule: enforcement point at trusted boundary per security requirement
+              (§40, §67.6); input validation boundary and rule ownership (§41)
+      - name: supply_chain_disposition
+        fields: [adopt-replace-remove-mitigate, rationale, vulnerability-response]
+        rule: cross-referenced with SP-09 handoff facts (§24)
+      - name: secret_disposition_record
+        fields: [rotation, impact-scope, follow-up-controls]   # §20
+      - name: supply_chain_control_tier
+        rule: baseline = integrity verifiable (checksum / digest / repository
+              integrity, §49); enhanced (high-security / external distribution /
+              regulated) adds signing / signed provenance / attestation / SBOM /
+              release archive (§50-51); tier judgment carries rationale (B1)
+      - name: release_authority_facts
+        rule: build / promote / deploy / override-gate / rollback permissions
+              defined (§56); release authority and exception authority
+              traceable (§57)
+      - name: security_evidence
+        rule: above records + security verification obligation list handed to
+              SP-11 / SP-12 / SP-13
+    nonOutputs:
+      - dependency-identity-resolution-facts    # SP-09
+      - code-implementation                     # SP-06
+      - verification-verdicts                   # SP-11 / SP-12 / SP-13
+      - provenance-attestation-build-products   # SP-14
+      - release-deployment-facts                # SP-15 / SP-17
+      - current-updates                         # SP-19
+
+  invariants:
+    - id: security-recognized-before-code-complete
+    - id: ui-hide-client-validation-not-enforcement
+    - id: integrity-floor-never-optional
+    - id: release-exception-authority-traceable
+    - id: secret-incident-never-fixed-by-file-deletion
+    - id: sp10-disposition-vs-sp09-identity-resolution
+    - id: safety-not-subsumed-by-security
+
+  actions:
+    - id: A1
+      name: Confirm entry and security touch surface
+      controlMode: automation-assisted
+      rules:
+        - enumerate touched security surfaces per §18 ten concern classes;
+          identify trust boundary changes
+        - "B1 re-challenge: upstream internal-tool-no-security / no-trust-boundary /
+          N-A classifications without resolvable rationale return to SP-04"
+    - id: A2
+      name: Security requirement recognition and verifiabilization
+      controlMode: engineering-decision
+      rules:
+        - verifiable expression per applicable concern (§18); testable, reviewable
+        - "safety domain judgment (§25): systems controlling personal-risk domains
+          register explicitly and stack dedicated safety standards — this spec
+          never replaces them; \"not applicable\" for ordinary business systems
+          carries rationale (B1)"
+        - recognition completes before code completion; security requirements
+          discovered after code completion are handled as new impact
+    - id: A3
+      name: Enforcement point and validation boundary design
+      controlMode: engineering-decision
+      rules:
+        - each security requirement gets an enforcement point at a trusted
+          boundary (§40, §67.6 [MUST][BASELINE]); frontend / client measures may
+          be UX, never enforcement
+        - "external input validation boundary and rule ownership explicit (§41):
+          validated per contract (type / range / format / size / allowed value /
+          authorization context); single rule ownership, no multi-layer conflicts"
+        - design hands to SP-05 (when material), implementation to SP-06
+    - id: A4
+      name: Third-party / supply chain disposition
+      controlMode: engineering-decision
+      rules:
+        - taking over SP-09 dependency facts (or directly identified), assess
+          trustworthiness / maintainability / known risk (§24); disposition =
+          adopt / replace / remove / mitigate with rationale recorded
+        - known vulnerability -> vulnerability response (impact scope / fix
+          version / temporary mitigation / verification); emergency-level
+          response via Ch8 + SP-21 pending-definition (group-5) compressed path,
+          disposition records never exempted
+    - id: A5
+      name: Secret security disposition
+      controlMode: engineering-decision + guardrail
+      rules:
+        - "secret in version history / logs / artifact / errors (Ch9 §20): never
+          fixed by deleting the file — credential rotation + impact assessment +
+          follow-up controls (scan rules / injection redesign) + record"
+        - SP-09 registers the fact; this procedure executes the disposition
+    - id: A6
+      name: Supply chain control tiering
+      controlMode: engineering-decision
+      rules:
+        - "by risk (§49-51): baseline = artifact integrity verifiable; enhanced
+          (high-security / external distribution / regulated / large dependency
+          surface / supplier-acquirer requirement) = + signing / signed
+          provenance / attestation / SBOM (auto-generated) / release archive"
+        - tier judgment carries rationale (B1); provenance / attestation build-time
+          production hands to SP-14; this procedure defines requirements and
+          consumes evidence
+    - id: A7
+      name: Release permission and separation of duties
+      controlMode: engineering-decision
+      rules:
+        - "define / adjust build / promote / deploy / override-gate / rollback
+          permissions (§56: authentication / authorization / least privilege /
+          audit)"
+        - "SoD by risk (§57: no forced CAB; release authority and exception
+          authority traceable — non-negotiable)"
+        - execution and recording = SP-15 / SP-17; this procedure defines the
+          permission face requirements
+    - id: A8
+      name: Security verification obligation definition
+      controlMode: engineering-decision
+      rules:
+        - per security requirement / enforcement / disposition define verification
+          obligations (which boundary, which evidence), handed to SP-11 / SP-12 /
+          SP-13 for execution and binding
+        - never accepts "the scanner reported nothing" in place of
+          requirement-level verification
+    - id: A9
+      name: Security evidence organization
+      controlMode: automation-assisted
+      rules:
+        - aggregate security evidence bound to change revision for SP-13 evidence
+          binding and later audits
+        - "evidence by work: only tier judgment rationale / disposition rationale /
+          safety judgment / B1 classifications must be explicitly written"
+    - id: A10
+      name: Handoff boundary summary
+      controlMode: engineering-decision
+      rules:
+        - material security design -> SP-05; implementation -> SP-06
+        - verification execution -> SP-11 / SP-12 / SP-13
+        - provenance production -> SP-14; release execution -> SP-15 / SP-17
+        - dependency facts <-> SP-09 (never mutually covering)
+        - emergency -> Ch8 + SP-21 pending-definition (group-5)
+        - current updates -> SP-19
+
+  gates:
+    - id: G-SP10-01
+      type: hard-gate
+      rule: security-requirement-enforced-at-trusted-boundary
+      note: never solely UI hide / client validation   # Ch9 §67.6, §40
+    - id: G-SP10-02
+      type: hard-gate
+      rule: security-quality-requirements-recognized-before-code-complete   # Ch4 §18
+    - id: G-SP10-03
+      type: hard-gate
+      rule: artifact-integrity-verifiable
+      note: checksum / digest / repository integrity, at least one   # Ch11 §49
+    - id: G-SP10-04
+      type: hard-gate
+      rule: deployment-release-permission-controlled
+      note: authentication / authorization / least privilege / audit; build /
+            promote / deploy / override-gate / rollback explicit by risk   # Ch11 §56
+    - id: G-SP10-05
+      type: hard-gate
+      rule: release-and-exception-authority-traceable   # Ch11 §57
+    - id: G-SP10-06
+      type: hard-gate
+      rule: external-input-validated-at-correct-boundary-per-contract
+      note: no multi-layer mutually conflicting business rules   # Ch9 §41
+    - id: G-SP10-07
+      type: hard-gate
+      rule: secret-incident-requires-rotation-impact-followup   # Ch9 §20
+    - id: G-SP10-08
+      type: hard-gate
+      rule: no-sp09-sp10-mutual-coverage   # Ch9 §24
+    - id: G-SP10-09
+      type: hard-gate
+      rule: personal-risk-systems-stack-dedicated-safety-standards   # Ch4 §25
+    - id: G-SP10-10
+      type: hard-gate
+      rule: gate-zeroing-classification-requires-resolvable-rationale
+      note: covers internal-tool-no-security / no-trust-boundary / SBOM /
+            provenance / SoD N-A classifications; re-challengeable by SP-05 /
+            SP-13 / group audit   # B1
+
+  passExit:
+    equals: >
+      Security Control Plan established (bound to change revision): applicable
+      security concerns recognized and verifiable (before code completion) +
+      enforcement point at trusted boundary per security requirement + supply
+      chain / third-party / secret dispositions completed or controlledly in
+      flight (owner + deadline) + control tier and permission face defined with
+      rationale + security verification obligations handed to SP-11 / SP-12 /
+      SP-13 -> handoff to SP-05 / SP-06 / SP-14 / SP-15 execution chains
+    doesNotMean: [security-verification-passed, vulnerabilities-fixed-live,
+                  provenance-produced, release-permissions-effective]
+
+  returnPaths:
+    - condition: security requirement discovered after code completion
+      next: handle as new impact (SP-04); never patch in place
+    - condition: enforcement cannot be effective at trusted boundary
+      next: back to SP-05 redesign; client measures never impersonate enforcement
+    - condition: third-party risk unacceptable with no alternative
+      next: escalate decision (owner / organization); never silently accept
+    - condition: emergency vulnerability response
+      next: Ch8 + SP-21 pending-definition (group-5) compressed path;
+            disposition records never exempted
+    - condition: verification obligation cannot define evidence
+      next: back to A2 / A3 to verifiabilize; otherwise the requirement itself
+            does not stand (Ch4 §18 chain)
+
+  exceptions:
+    - id: E-small-internal-tool
+      rule: "baseline tier simplified: integrity floor (§49) and secret
+            prohibition never exempted; signing / SBOM / SoD may be not-adopted
+            per §50-51, §57 applicability — the not-applicable judgment carries
+            rationale (B1), and any of external-distribution / regulated /
+            large-dependency-surface upgrades the tier"
+    - id: E-small-team-combined-duties
+      rule: one engineer building + reviewing + deploying remains reasonable
+            (§57); no forced CAB — but release authority and exception authority
+            traceability never exempted (G-SP10-05)
+    - id: E-emergency-security-response
+      rule: severe vulnerability / data exposure may take the compressed path
+            (Ch8 + SP-21 pending-definition, group-5; until then follow Ch8
+            body); security analysis, disposition records, post-hoc
+            reconciliation never exempted
+
+  evidenceByWork:
+    natural:
+      - security requirement record (concern + verifiable expression)
+      - enforcement design (enforcement point per requirement)
+      - supply chain disposition / vulnerability response records
+      - secret disposition record (rotation / impact / follow-up controls)
+      - control tier judgment + permission face facts
+      - security verification obligation list (handoff record)
+    extraOnlyFor: [tier-judgment-rationale, disposition-rationale,
+                   safety-judgment, b1-gate-zeroing-classifications]
+    rule: all other evidence emerges naturally from the work
+
+  currentUpdateObligation:
+    writesCurrent: false
+    boundaries:
+      - security control definitions and disposition records are change-bound
+        facts
+      - formal migration of current design / permission face / supply chain
+        baselines goes explicitly through SP-19 after implementation +
+        verification + delivery complete
+
+  theoryTrace:
+    part1: [GI-03, GI-05]
+    part2: [p2-ch4-18-security-privacy-concerns, p2-ch4-25-safety-vs-security,
+            p2-ch9-20-secret, p2-ch9-24-ssdf-third-party-sp09-division,
+            p2-ch9-40-41-enforcement-input-validation, p2-ch9-42-ssdf-sdlc,
+            p2-ch9-67.6-trusted-boundary-must,
+            p2-ch11-11-provenance-slsa, p2-ch11-49-integrity-floor,
+            p2-ch11-50-secure-release, p2-ch11-51-sbom,
+            p2-ch11-56-deployment-permission, p2-ch11-57-sod-traceability,
+            p2-ch11-86.1-86.2-build-minimum-must]
+    part3: [source-build-runtime-mappings]   # enforcement points at source /
+                                              # runtime; release permission face
+                                              # at build / runtime
+    part4: [ch5-enforcement-implementation, ch6-security-verification-evidence,
+            ch7-integrity-provenance-permission-at-release,
+            ch8-emergency-security-response]
+    journey: [JG-05]                            # SP-09 -> SP-10 mainline
+
+  executableAssets: [EA-11, EA-13, EA-08]
+  assetRule: >
+    tooling fits: secret scans, integrity verification, SBOM auto-generation,
+    attestation verification, dependency vulnerability matching. Tooling does
+    not fit: security requirement recognition, enforcement design, disposition
+    decisions, control tiering, safety judgments. A scan report is never
+    requirement-level verification evidence (GI-06).
+
+  referenceProfiles:
+    - id: RP-ONLINE-API-PY-GH
+      bindings:
+        enforcement: server-side injected permission checks (single enforcement
+                     point ownership)
+        supply_chain: GitHub ecosystem — dependency vulnerability matching /
+                      secret scanning / actions attestation
+        release_permission: protected environments + required checks; small-team
+                            combined duties legal
+    - id: RP-B-CLI   # pending-definition (group-6)
+      bindings:
+        distribution_integrity: checksum + (external distribution) signing;
+                                SBOM auto-generated with release
+        secret: OS keychain reference; no server-side permission face
+                (deployment permission tailored, rationale recorded)
+    - id: RP-C-SDK   # pending-definition (group-6)
+      bindings:
+        default_tier: enhanced — signing / SBOM / provenance / release archive
+        consumer: uncontrollable -> supply chain evidence externally verifiable;
+                  safety-domain SDKs stack domain standards
+
+  example:
+    ref: CHG-WO-142
+    continues: SP-07 / SP-08 / SP-09 examples; security requirements directly
+               correspond to the P2 Ch4 §18 transfer example
+    highlight: >
+      Recognized before code completion: only TRANSFER_WORK_ORDER holders may
+      transfer (authorization); transfers must produce audit records (audit);
+      the internal annotation part of the structured reason payload's note
+      must not be readable by ordinary users or the partner (data exposure /
+      confidentiality; same fact setting as the SP-08 / SP-09 examples);
+      safety judged not applicable with rationale (B1). Enforcement: the
+      permission check takes effect at the work-order-service server-side
+      enforcement point — never at the admin-app hide-button layer (§67.6);
+      the note's internal annotation is filtered at the API serialization
+      boundary; input validation per contract at the HTTP boundary with
+      single rule ownership. Third-party: the SP-09-introduced validation
+      library assessed trustworthy / actively maintained / no known
+      vulnerabilities -> adopt, rationale recorded, cross-referenced. Tier:
+      internal business system, unregulated -> baseline tier (artifact digest +
+      repository integrity; provenance facts produced by SP-14 consumed here).
+      Permissions: override-gate restricted to the release owner; exception
+      authority via the existing registered path (§57). Verification
+      obligations handed to SP-11 / SP-13: permission-denied cases, audit event
+      production, absence of the note's internal annotation from partner
+      responses.

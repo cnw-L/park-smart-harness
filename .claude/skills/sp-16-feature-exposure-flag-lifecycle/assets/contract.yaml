@@ -1,0 +1,403 @@
+# SP-16 Feature Exposure / Flag Lifecycle — Operation Contract
+# Machine-loadable mirror of 第五篇-SP16-FeatureExposureFlag-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-16
+  name: Feature Exposure / Flag Lifecycle
+  status: sealed                   # 2026-09-01 group-5 audit PASS AFTER REPAIR (P1 x2 applied) + regression PASS
+  version: 1.0.0
+  normativeSource: 第五篇-SP16-FeatureExposureFlag-正式操作规程.md
+  singleResponsibility: >
+    Decouple capability exposure (launch) from binary deployment as two
+    controlled facts: govern the exposure asset and its lifecycle (flag /
+    rollout config owner / purpose / default / launch plan / cleanup
+    condition), maintain exposure state expressed at truthful granularity,
+    and guarantee exposure changes are delivered as target-changing actions.
+    Code 100% deployed with the flag off is not a launch; a feature flag is
+    not a free eliminator of release risk, and a temporary flag without the
+    five-element registration is future config drift and old code path.
+
+spec:
+
+  triggers:
+    - id: T-launch-new-capability-gated       # deployed code contains unexposed
+                                               # feature; launch design or execution
+                                               # (JG-07: SP-15 -> SP-16 -> SP-17)
+    - id: T-exposure-change-material          # materially changes user behavior
+                                               # (traffic shift / tenant / cohort /
+                                               # region, Ch7 §87)
+    - id: T-flag-lifecycle-governance         # registration / cleanup condition
+                                               # trigger / long-term disposition
+                                               # (P2 Ch11 §41)
+    - id: T-flag-debt                         # unowned / no-cleanup / permanently-on
+                                               # temporary flags / old code paths /
+                                               # test combination (Ch11 §41)
+  redLine: >
+    Code 100% deployed with the flag OFF must not be reported as feature
+    launched (Ch7 §137); "we can turn the flag off anytime" is never a reason
+    to skip verification or exposure control (Ch11 §41).
+
+  inputs:
+    required:
+      - name: affected_scope_and_concern_facts
+        type: ref                     # SP-04: confirmed affected scope and concern
+                                      # — which features/capabilities touched
+                                      # (additive maintenance applies, P2 Ch12 §14);
+                                      # whether an exposure face changes is judged
+                                      # by A1 of this procedure from delivery facts,
+                                      # not an SP-04 output
+      - name: transition_rollout_design
+        type: ref                     # SP-05: flag as transition mechanism, position
+                                      # in migration != transition != rollout
+      - name: delivery_deployment_facts
+        type: reference-set           # SP-15: which artifacts deployed to which
+                                      # targets, rollout slice status
+      - name: current_flag_asset_state
+        type: reference-set           # flag registry: existing flags, owner /
+                                      # default / cleanup condition status (Ch11 §41)
+    conditional:
+      - name: observation_signal_definitions
+        type: reference-set           # error / latency / business metric /
+                                      # migration progress (Ch7 §51, P2 Ch11 §70)
+        appliesWhen: progressive exposure designed
+
+  outputs:
+    primary:
+      - name: exposure_launch_plan
+        fields: [strategy-by-risk, progressive-stages, stop-conditions,
+                 per-stage-observation-signals]   # Ch11 §36, §39; Ch7 §51, §53
+      - name: flag_registry_entry
+        fields: [owner, purpose, default, launch-plan, cleanup-condition]
+                                      # Ch11 §41; EA-14 evidence face =
+                                      # state + owner + cleanup
+      - name: exposure_state_fact_definition
+        rule: truthful-granularity expression (target / tenant / cohort /
+              percentage) plus required observation face (P2 Ch11 §70, Ch7 §53);
+              fact commits orchestrated by SP-15
+      - name: exposure_execution_handoff_package
+        rule: handoff to SP-15 — launch plan, exposure semantics, recovery
+              intent (incl. emergency-disable intent) for target-changing
+              action execution
+      - name: flag_cleanup_or_long_term_disposition
+        rule: cleanup-condition-triggered removal plan (incl. old code path);
+              long-term business switch -> formal configuration contract
+              (definition SP-09 / evolution SP-07)
+      - name: flag_debt
+        fields: [debt-item, risk, owner, cleanup-condition]
+    nonOutputs:
+      - exposure-change-execution-and-authority-control   # SP-15
+      - target-validation-verdicts                        # SP-17
+      - recovery-execution                                # SP-18
+      - single-flag-config-change-record                  # SP-09 (Ch11 §42 five elements)
+      - cross-boundary-contract-evolution                 # SP-07
+      - current-updates                                   # SP-15 (execution-time
+                                      # runtime state) / SP-19 (project-level)
+
+  invariants:
+    - id: deployed-not-launched-when-flag-off
+    - id: material-exposure-change-is-target-changing-action
+    - id: temporary-flag-requires-five-elements
+    - id: flag-does-not-exempt-verification
+    - id: exposure-state-truthful-granularity
+    - id: no-silent-flag-permanentization
+
+  actions:
+    - id: A1
+      name: Confirm entry and exposure object
+      controlMode: automation-assisted
+      rules:
+        - confirm exposure-face change (from delivery facts, SP-15 input),
+          which feature/capability is exposed, whether flag-gated, exposure
+          dimension (instance / traffic / region / tenant / cohort /
+          feature exposure, Ch7 §48)
+        - "B1 re-challenge: launch-directly-without-flag / not-material /
+          internal-tool-no-exposure classifications without resolvable
+          rationale return to SP-04 / SP-05"
+    - id: A2
+      name: Exposure strategy and launch plan design
+      controlMode: engineering-decision
+      rules:
+        - "strategy by risk (Ch11 §36: all-at-once / canary / tenant-by-tenant /
+          flag-progressive; progressive not mandatory for low-impact internals)"
+        - launch plan = progressive stages (e.g. 0%->5%->20%->100%) + per-stage
+          stop conditions (error / latency / critical business failure / data
+          inconsistency, §39 — thresholds from service requirement / baseline,
+          not uniformly prescribed) + per-stage observation signals (Ch7 §51;
+          high-risk exposure evidence attributable to release revision and
+          rollout slice, §53)
+        - launch plan is the main body of the SP-15 execution handoff
+    - id: A3
+      name: Flag asset registration (five elements)
+      controlMode: automation
+      rules:
+        - "every temporary flag registered: owner / purpose / default / launch
+          plan / cleanup condition (Ch11 §41; EA-14 state + owner + cleanup)"
+        - default-value policy explicit (esp. fail-safe OFF default); a flag
+          without the five elements never enters exposure execution
+    - id: A4
+      name: Exposure state fact and observation face definition
+      controlMode: automation-assisted + engineering-decision
+      rules:
+        - "define expression granularity and observation face: per-target /
+          per-tenant / per-cohort flag state, current percentage, artifact
+          version distribution, stop/pause state (P2 Ch11 §70)"
+        - exposure state is part of environment current runtime state; fact
+          commits orchestrated by SP-15 at execution time (Ch7 §60-62, mixed
+          state recorded truthfully); this procedure guarantees the semantic
+          granularity is never flattened (GI-05)
+        - no-server forms use distribution record / channel / cohort /
+          installation / adoption / version exposure for the same semantics
+          (Ch7 §88, SP-15 §11)
+    - id: A5
+      name: Exposure change execution handoff
+      controlMode: engineering-decision
+      rules:
+        - "flag flips, exposure expansion, emergency disable all hand to SP-15
+          as target-changing actions (§86-87: authority token check,
+          observation, rollout slice control; §114: feature disable and traffic
+          revert equally constrained)"
+        - this procedure provides launch plan, exposure semantics, recovery
+          intent; post-exposure behavioral validation concern = SP-17
+        - "\"exposure change not material, no control needed\" is a gate-zeroing
+          judgment and carries rationale (B1)"
+    - id: A6
+      name: Flag cleanup and long-term disposition
+      controlMode: engineering-decision
+      rules:
+        - "cleanup condition triggered -> removal plan: flag removal + old code
+          path deletion + test combination shrink, as a normal controlled
+          change via SP-03 and downstream procedures"
+        - "long-term disposition explicit: genuinely long-lived business switch
+          -> formal configuration contract (§41; definition/publication SP-09,
+          cross-boundary evolution SP-07); kill-switch / safety flags judged
+          permanent assets (owner + periodic drill) — explicitly registered,
+          not counted as debt"
+        - "\"temporary flag one more release\" without rationale is treated as debt"
+    - id: A7
+      name: Flag debt governance
+      controlMode: engineering-decision
+      rules:
+        - "inspect flag registry (maintenance planning input, Ch12 §7): unowned
+          / no-cleanup / permanently-on temporary flags / old code path piles"
+        - "register flag debt: risk + owner + cleanup condition (against
+          landfilling, Ch12 §37 analogy); design-grade removal paths (old code
+          path load-bearing) hand to SP-05"
+    - id: A8
+      name: Client / no-server form adaptation
+      controlMode: engineering-decision
+      rules:
+        - client / device exposure = version exposure via distribution channel
+          / cohort (staged rollout channels), launch semantics via
+          installation / adoption observation (Ch7 §88)
+        - never fabricate server-side environment deployment records;
+          distribution execution = SP-15, this procedure owns exposure
+          semantics and adoption facts
+
+  gates:
+    - id: G-SP16-01
+      type: hard-gate
+      rule: 100-percent-deployed-with-flag-off-is-not-launched
+      note: deploy != release != launch separation never conflated
+            # Ch11 §2.5/§3, Ch7 §86, §137
+    - id: G-SP16-02
+      type: hard-gate
+      rule: material-exposure-change-goes-through-sp15-target-changing-control
+      note: includes expansion, contraction, emergency disable   # Ch7 §87, §114, §139
+    - id: G-SP16-03
+      type: hard-gate
+      rule: temporary-flag-requires-five-element-registration
+      note: owner / purpose / default / launch plan / cleanup condition  # Ch11 §41
+    - id: G-SP16-04
+      type: hard-gate
+      rule: flag-existence-never-exempts-verification-or-exposure-control
+      note: '"can turn it off anytime" is not a reason'          # Ch11 §41
+    - id: G-SP16-05
+      type: hard-gate
+      rule: exposure-state-recorded-at-truthful-granularity
+      note: partial exposure never flattened to a single boolean  # P2 Ch11 §70, GI-05
+    - id: G-SP16-06
+      type: hard-gate
+      rule: flag-permanentization-requires-explicit-disposition-and-handoff
+      note: long-term business switch -> configuration contract (SP-09 definition /
+            SP-07 evolution); kill switch -> permanent asset registration; never
+            silently permanent   # Ch11 §41
+    - id: G-SP16-07
+      type: hard-gate
+      rule: never-bypass-sp15-to-execute-exposure-changes
+      note: this procedure defines semantics and plans; execution control (authority
+            token / slice / observation) stays with SP-15   # Ch7 §86-87, §114
+    - id: G-SP16-08
+      type: hard-gate
+      rule: no-sp16-sp05-sp09-mutual-coverage
+      note: flag-as-mechanism choice and transition design = SP-05; single flag config
+            change publication elements = SP-09; this procedure owns cross-change
+            exposure lifecycle
+    - id: G-SP16-09
+      type: hard-gate
+      rule: gate-zeroing-classification-requires-resolvable-rationale
+      note: covers no-flag-needed / not-material / internal-tool-no-exposure;
+            re-challengeable by SP-05 / SP-13 / group audit   # B1
+
+  passExit:
+    equals: >
+      Exposure / launch plan established (bound to feature and delivery facts):
+      exposure strategy tailored by risk (B1 rationale holds) + when applicable:
+      flag five-element registration complete, progressive stages and stop
+      conditions explicit + exposure state fact granularity and observation
+      face defined + execution handoff to SP-15 (launch plan + exposure
+      semantics + recovery intent) + when applicable: cleanup / long-term /
+      debt dispositions in writing -> handoff to SP-15 (exposure execution) /
+      SP-17 (post-exposure validation)
+    doesNotMean: [feature-fully-exposed, target-validation-passed,
+                  exposure-incident-recovered, flag-cleaned-up, current-updated]
+
+  returnPaths:
+    - condition: exposure change judged to need re-authorization by SP-15 (basis invalid)
+      next: update launch plan and re-handoff (Ch7 §29-30 revalidation)
+    - condition: post-exposure validation FAIL / NOT_READY
+      next: SP-17 path; recovery actions needed -> SP-18
+    - condition: fix requiring new software content during exposure
+      next: SP-18 recovery (forward fix producing new software content returns to
+            normal procedures); kill-switch-style immediate disable execution still
+            goes through SP-15
+    - condition: cleanup condition unsatisfiable (old code path still load-bearing)
+      next: register flag debt + hand to SP-05 for removal path design; never
+            silently shelve
+    - condition: long-term disposition triggers cross-boundary commitment evolution
+      next: hand to SP-07 (with fact input)
+    - condition: material design problem (exposure strategy unsound)
+      next: SP-05
+
+  exceptions:
+    - id: E-no-flag-infrastructure
+      rule: "projects without a flag platform (P3 Ch6 §49: the platform is an external
+            capability carrier, not the semantics) may implement exposure control
+            via versioned config values / release channels / environment-level
+            switches; five-element registration and answerability of \"when did user
+            impact begin\" are never exempted. All-at-once exposure classification
+            carries rationale (B1)"
+    - id: E-permanent-kill-switch
+      rule: long-lived kill switches / safety flags are legitimate permanent assets —
+            explicitly judged permanent (owner + trigger conditions + periodic drill,
+            registered in the flag registry), not counted as flag debt and never
+            disguised as temporary flags to evade registration; not long-term
+            business configuration but a runtime safety control (drills = SP-18
+            recovery rehearsal face)
+    - id: E-emergency-disable
+      rule: emergency flag-off during an incident still goes through SP-15
+            target-changing action control (authority token constrains feature
+            disable, Ch7 §114); emergency change semantics (compressed execution and
+            after-the-fact reconciliation) = SP-21 / Ch8. This procedure provides the
+            kill-switch asset and intent — it invents no bypass channel
+
+  evidenceByWork:
+    natural:
+      - exposure / launch plan (stages and stop conditions)
+      - flag registry entries (five elements)
+      - exposure state observation face definitions and collected facts (produced
+        under SP-15 orchestration)
+      - exposure execution handoff records (launch plan version)
+      - cleanup / long-term / debt disposition records
+    extraOnlyFor: [gate-zeroing-classification-rationale,
+                   long-term-disposition-rationale,
+                   permanent-kill-switch-registration]
+    rule: all other evidence emerges naturally from the work
+
+  currentUpdateObligation:
+    writesCurrent: false
+    boundaries:
+      - exposure state is part of environment current runtime state; fact commits
+        are orchestrated by SP-15 at execution time (authority-endorsed, updated
+        with real exposure facts, Ch7 §60-62)
+      - accepted current release face belongs to SP-17; project-level current
+        (incl. design / structure changes from flag cleanup) belongs to SP-19
+      - any formal current baseline migration goes explicitly through SP-19
+
+  theoryTrace:
+    part1: [GI-03, GI-05, GI-13]        # deployed != launched is GI-05 applied
+    part2: [p2-ch11-2.5-launch-enable-four-way-separation,
+            p2-ch11-3-why-deploy-release-distinct,
+            p2-ch11-36-42-rollout-canary-flag-not-free,
+            p2-ch11-68-70-complex-rollout-status-partial-observability,
+            p2-ch12-14-additive-maintenance-context]
+    part3: [p3-ch3-31-flag-runtime-behavior-determinant,
+            p3-ch3-42-44-mixed-target-transition-runtime-structure,
+            p3-ch3-71.7-defers-to-p2-build-release-baseline,
+            p3-ch6-49-flag-platform-external-capability,
+            p3-drift-61-flag-as-observation-mismatch-explanation]
+    part4: [ch7-46-59-rollout-slice-attribution-proceed-pause,
+            ch7-86-87-launch-exposure-separate,
+            ch7-88-client-equivalent-semantics,
+            ch7-114-116-authority-token-constrains-disable-revert,
+            ch7-137-feature-flag-counterexample,
+            ch7-139-minimum-requirements-exposure-items]
+    journey: [JG-07]                   # post-delivery validation / expanding exposure / recovery
+
+  executableAssets: [EA-14, EA-15]
+  assetRule: >
+    tooling fits: flag registry maintenance, exposure state collection,
+    percentage / distribution observation panels, cleanup-condition expiry
+    reminders. Tooling does not fit: exposure strategy choice, materiality
+    judgment, long-term disposition, debt disposition — "the flag platform
+    shows ON" is never a launch-semantics verdict (GI-07). A filled template
+    is never decision evidence (GI-06).
+
+  referenceProfiles:
+    - id: RP-ONLINE-API-PY-GH
+      bindings:
+        flag: versioned config-defined flag items + platform injection (reference
+              traceable)
+        exposure_execution: same controlled chain as binary release (SP-15)
+        observation: per-slice metrics (error / latency / business signal)
+    - id: RP-B-CLI   # pending-definition (group-6)
+      bindings:
+        launch: distribution arrival (channel / cohort staged rollout)
+        exposure_semantics: version exposure / adoption observation
+        kill_switch: limited — no remote post-install switch forms explicitly
+                     registered
+    - id: RP-C-SDK   # pending-definition (group-6)
+      bindings:
+        runtime_flag: none — launch = consumer upgrade adoption
+        exposure_face: adoption / version-distribution observation
+        compatibility: old-consumer-must-work guaranteed pre-release (SP-07 / SP-05)
+
+  example:
+    ref: CHG-WO-142
+    continues: SP-15 / SP-17 examples (group-3) and SP-07 / SP-08 / SP-09 / SP-10
+               examples (group-4) — WO-1.9.0 already carries reason code with canary
+               validated; C9 event adds reason as optional (SP-07), V203 migration
+               executed (SP-08), config-schema allowed-value list settled (SP-09 A7).
+               This example covers the flag-gated launch exposure lifecycle
+    highlight: >
+      The reason capability is deployed with WO-1.9.0 but unexposed by default —
+      old behavior path remains default at 100% of production (delivery facts,
+      SP-15). Exposure object = TransferReason; dimension = partner + tenant
+      (external-consumer-facing, Ch7 §48). High impact -> progressive exposure
+      0%->5%->20%->100% (the native example of Ch11 §40), stop conditions =
+      event publish success-rate thresholds / partner consumption error rate /
+      backlog, signals attributed per slice (Ch7 §53). Flag
+      workorder.transfer_reason registered with five elements: owner =
+      work-order-service team; purpose = decoupling binary deployment from
+      reason launch and bounding partner digestion risk; default = OFF
+      (fail-safe); launch plan = the stage table; cleanup condition = 100%
+      exposure + partner confirmed healthy + one release cycle, then remove
+      flag and the no-reason old code path. Exposure state (per-partner /
+      per-tenant flag state + percentage) enters environment current runtime
+      state (SP-15 execution-time commits); observation panel = reason payload
+      publish rate / partner consumption error rate by slice (EA-15). The first
+      0%->5% flip is handed to SP-15 as a target-changing action (authority
+      token + rollout slice + observation); emergency-disable intent (trigger
+      conditions) registered in the handoff package — execution still
+      authority-token constrained (Ch7 §114); post-exposure validation concern
+      = SP-17. Long-term disposition: the category allowed-value list is
+      already config schema (SP-09 A7 fact handed to SP-07), but the flag
+      itself is judged temporary — not permanentized; cleanup runs as a normal
+      change (SP-03). Registry inspection (A7) additionally finds flag
+      workorder.bulk_export unowned and permanently ON for 8 months -> flag
+      debt registered (risk = old code path + test combination / owner = to
+      claim / cleanup condition = next maintenance cycle evaluation, handing
+      to SP-05 if needed) — aligned with the Ch12 §7 maintenance-input sweep.

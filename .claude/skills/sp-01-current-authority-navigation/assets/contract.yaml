@@ -1,0 +1,223 @@
+# SP-01 Current / Authority Navigation — Operation Contract
+# Machine-loadable mirror of 第五篇-SP01-CurrentAuthorityNavigation-正式操作规程.md
+# The Markdown body is the normative source; this contract is its structured projection
+# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# repair the projection, never the reverse (GI-13).
+apiVersion: spec.part5/v1alpha1
+kind: OperationContract
+metadata:
+  id: SP-01
+  name: Current / Authority Navigation
+  status: sealed                   # 2026-08-30 group-2 audit PASS AFTER REPAIR + regression 20/20 VERIFIED
+  version: 1.0.0
+  normativeSource: 第五篇-SP01-CurrentAuthorityNavigation-正式操作规程.md
+  singleResponsibility: >
+    Resolve a truthful, scope-partitioned, authority-resolvable Current Context
+    for any engineering task. Read/resolve only — never writes Current,
+    never approves anything.
+
+spec:
+
+  triggers:
+    - id: T-enter-existing-project   # JG-00
+    - id: T-before-change-establishment   # SP-03 precondition
+    - id: T-before-impact-design-implementation
+    - id: T-incident-emergency
+    - id: T-suspected-drift
+    - id: T-authority-unclear
+    - id: T-before-review-verification-release
+
+  inputs:
+    required:
+      - name: engineering_scope
+        type: scope-ref
+      - name: task_intent
+        type: string
+      - name: navigation_entry
+        type: ref   # Authoritative Navigation Surface
+    optional:
+      - name: known_concern_list
+        type: list<concern>
+      - name: target_environment_scope
+        type: scope-ref
+      - name: time_constraint
+        type: enum [normal, emergency]
+
+  outputs:
+    primary:
+      kind: CurrentContext
+      fields:
+        - name: scoped_current_references   # per concern: {ref, revision, scope}
+          type: list<current-ref>
+          rule: revision-granularity-required   # "latest" does not count
+        - name: authority_map               # per concern+scope: designated authority / owner
+          type: map<concern+scope, authority-ref>
+        - name: evidence_pointers
+          type: list<evidence-ref>
+        - name: truth_status                # per item: fact | unknown-gap | absent | target
+          type: map<item, truth-status>
+          rule: no-unknown-disguised-as-fact    # GI-02
+        - name: health_findings
+          type: list<finding-ref>
+        - name: resolved_at
+          type: timestamp+source-revision
+    nonOutputs:                 # SP-01 must never emit these
+      - acceptance-or-approval-decision
+      - current-write
+      - target-or-design-conclusion
+      - change-establishment
+      - readiness-pass
+
+  invariants:
+    - id: GI-04
+      rule: current-is-scoped        # per concern/baseline-kind + scope + authority
+    - id: GI-05
+      rule: no-state-collapse
+      states: [accepted-declared, target-intent, observed-actual, runtime-actual, tool-snapshot]
+    - id: GI-07
+      rule: tool-never-gains-semantic-authority
+    - id: GI-11
+      rule: authority-per-concern-and-scope
+    - id: P3-accepted-vs-observed
+      rule: divergence-becomes-health-finding-never-silent-choice
+
+  actions:
+    - id: A1
+      name: Determine scope and concern list
+      controlMode: engineering-decision
+    - id: A2
+      name: Enter via Authoritative Navigation Surface
+      controlMode: guidance
+      failureProduces: foundation-finding
+    - id: A3
+      name: Resolve per-concern Current references to revision granularity
+      controlMode: automation
+    - id: A4
+      name: Resolve Authority / Owner per concern+scope
+      controlMode: automation-assisted   # resolution automated; conflict ruling is not
+      failureProduces: [missing-authority-finding, authority-conflict-finding]
+    - id: A5
+      name: Resolve evidence pointers
+      controlMode: automation
+    - id: A6
+      name: Compare Accepted vs Observed; classify findings
+      controlMode: automation
+      appliesWhen: reliable-probe-available
+      rules:
+        - the compared concern+scope set and its evidence must be enumerated explicitly;
+          an empty comparison set is itself a reasoned declaration — "no known divergence"
+          must never result from "no comparison performed"
+        - finding severity and disposition remain engineering decisions
+    - id: A7
+      name: Tag truth status per item
+      controlMode: automation-assisted
+      vocabulary: [fact, unknown-gap, absent, target]
+      rule: a `fact` tag derived solely from resolution success is a proposal requiring
+            engineering confirmation; automation never asserts truth   # GI-07
+    - id: A8
+      name: Emit Current Context
+      controlMode: automation
+      consumedBy: [SP-03, SP-04]   # SP-05 consumes baseline via SP-03/SP-04;
+                                   # SP-12 / SP-13 sealed (group-3)
+
+  gates:
+    - id: G-SP01-01
+      type: hard-gate
+      rule: no-change-on-undeclared-unknown
+      statement: >
+        A Starting Baseline must not be established on undeclared Unknown/Gap.
+        Unknown may exist only if explicitly declared; SP-03 rules decide
+        whether work may continue.
+    - id: G-SP01-02
+      type: hard-gate
+      rule: tool-output-not-authority
+      statement: >
+        Tool scan results may become Observed Evidence or finding candidates
+        only; they must never be auto-promoted to Current Authority.
+
+  passExit:
+    criteria:
+      - every applicable concern has a current-ref at revision granularity with scope
+      - every applicable concern has resolvable authority/owner or an explicit finding
+      - every item has truth status with no disguised unknowns
+      - accepted-vs-observed comparisons performed per the declared comparison set;
+        divergences recorded as health findings (empty set carries a reasoned declaration)
+      - navigation entry resolvable, or foundation finding explicitly registered with
+        this resolution path documented inside it
+      - current context is stably referenceable by downstream procedures
+    doesNotMean: [current-is-healthy, current-is-latest-observed, change-authorized]
+
+  returnPaths:
+    - condition: navigation entry missing or broken
+      produces: foundation-finding
+      next: [SP-02 revalidation, remediation change]
+    - condition: dangling reference or duplicate identity
+      produces: structure-health-finding
+      next: part3 finding disposition   # downstream use must carry health-affected tag
+    - condition: missing authority
+      produces: authority-finding
+      next: governance designates authority before semantic acceptance
+    - condition: authority conflict
+      produces: stop-use-of-contested-semantics
+      next: designated owner rules per concern+scope   # GI-12; no averaging
+    - condition: accepted != observed
+      produces: drift-finding
+      next: [calibration change, SP-19]   # SP-01 never rewrites Current itself;
+            # SP-19 sealed (group-3); the interim domain-authority path is formally
+            # succeeded by SP-19
+
+  exceptions:
+    - id: E-greenfield
+      rule: absent-is-truthful-current   # never fabricate future facts
+    - id: E-emergency
+      rule: minimal current context allowed (runtime/release/deployment/affected-module)
+      obligation: unknown portions explicitly tagged; full context reconciled after
+      followUp: [SP-19, SP-21]   # SP-19 sealed (group-3); SP-21 pending-definition (group-5)
+    - id: E-long-running-change
+      rule: current context is point-in-time; re-resolve affected concerns on change
+      obligation: working-baseline update needs reason + impact decision + updated ref
+
+  evidenceByWork:
+    natural:
+      - navigation query / path record
+      - pinned reference+revision in change record
+      - observed evidence pointers (CI, deploy, telemetry)
+      - health finding records
+    extraOnlyFor: [decision, rationale]   # no standalone evidence.md required
+    historyRule: starting context must be preserved, never overwritten   # P4 §38
+
+  currentUpdateObligation:
+    writesCurrent: false
+    mayProduce: [structure-health-finding, authority-finding, foundation-finding, unknown-gap-declaration]
+    repairedVia: [engineering-change, SP-19, SP-02]   # SP-19 sealed (group-3)
+
+  theoryTrace:
+    part1: [GI-02, GI-04, GI-05, GI-07, GI-11]
+    part2: [project, architecture, module, contract, data]
+    part3: [ch1, ch2, ch7, ch8-accepted-vs-observed, ch8-authority-distributed, ch8-navigation-surface, ch8-health-finding]
+    part4: [ch1-starting-working-baseline, ch1-context-reconciliation, ch2-change-establishment]
+
+  executableAssets: [EA-01, EA-17]
+
+  referenceProfiles:
+    - id: RP-ONLINE-API-PY-GH
+      bindings:
+        navigation_entry: README + docs/current/project.md
+        source_current: git SHA
+        data_current: alembic head revision
+        release_current: deployment record
+    - id: RP-B-CLI   # shape binding; runtime current is explicitly absent for CLI/SDK
+      bindings:
+        release_current: published artifact version + channel
+        runtime_current: absent
+    - id: RP-C-SDK
+      bindings:
+        release_current: published artifact version + channel
+        runtime_current: absent
+
+  example:
+    task: add transferReason field to work-order-service
+    concerns: [contract, data, module, source, runtime]
+    highlight: >
+      Consumer list unresolved → tagged unknown-gap and carried into SP-03;
+      SP-03/SP-04 rules decide whether it blocks contract evolution.
