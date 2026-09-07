@@ -52,3 +52,16 @@
 - 验证类命令（测试/构建/lint）的真实输出由 hooks 自动落盘到 `evidence/runs.jsonl`——这是 Evidence by Work 的载体，不可手改。捕获范围与规约详见 [evidence/README.md](evidence/README.md)。
 - `git push` 前置门禁会检查是否存在晚于 HEAD 提交的验证记录（SP-11 纪律）；无记录时先跑验证。临时绕过：环境变量 `SPEC_GATE_DISABLE=1`（事后须补记原因到 log.md）。
 - 本仓库当前有未提交的工作区改动时，push 门禁只看时间先后（最小机械投影），改没改对、绿不绿仍由 SP-11/SP-12 的规程判断承担。
+
+## 5. PR 与分支要求（最小协作闭环）
+
+双道规则：日常变更默认走 issue → PR → review → merge 闭环（`issue` / `implement` / `review` / `fix` 四技能，薄道）；
+触及 major 判据（公共 API/Contract、数据库 Schema、依赖/工具链、安全面）或专项执行面时，
+改走 §1 场景路由加载对应 SP 规程（全链）。两道都留痕。
+
+- 不直接改 main：一切走 PR；CI（`.github/workflows/ci.yml`）必须通过。
+- PR 描述四行：触发 / 范围 / 验证 / 收口（模板：`.github/pull_request_template.md`）。
+- review 必须独立：全新会话，只读 Issue + diff + 代码 + CI；PR 描述是实现者的声明，逐条对照代码核验。
+  输出 APPROVE 或 REQUEST_CHANGES（Blocking / Non-blocking 分列）。
+- 验证不通过不能声称完成；skipped 的测试不是通过；不 force-push 掩盖失败历史。
+- review 的 blocking 发现逐 PR 记入 `wiki/impact.md`（连续多个 PR 零 blocking = 先查 review 独立性）。
