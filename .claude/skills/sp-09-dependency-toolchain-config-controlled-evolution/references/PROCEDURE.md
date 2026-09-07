@@ -322,11 +322,11 @@ RP-ONLINE-API-PY-GH:
   image digest；Config = env vars + 版本化 config 定义；Secret = 平台注入
   （Reference 可追踪）；Config Release 走与 Binary 相同的受控链
 
-RP-B-CLI（pending-definition，组6）:
+RP-B-CLI（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   Dependency 确定性 = lockfile / vendoring；Config = 用户配置文件（路径与
   Schema 版本化）；Secret = OS keychain / 外部注入引用；无服务端环境面
 
-RP-C-SDK（pending-definition，组6）:
+RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   Dependency 最小化最强——SDK 的依赖进入 Consumer 的依赖树（§23 权重最高）；
   版本范围声明替代 Lock（Lock 不传递给 Consumer）；Toolchain / Generator
   版本固定（发布可重现性归发布方负责）
@@ -355,7 +355,7 @@ A6 Config Change：TRANSFER_NOTIFY_TIMEOUT 从 5s 调 10s（该 timeout 为
    Config Change Record（Identity=cfg-wo-118 / Reason= Partner 网络抖动 /
    Authorization= Service Owner / Verification= 超时行为测试 / Target
    State=10s），发布编排移交 SP-15；Flag 暴露面的进一步生命周期治理 →
-   SP-16（pending-definition，组5；落地前由 SP-15 §11.3 Target-changing
+   SP-16（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；落地前由 SP-15 §11.3 Target-changing
    Action 过渡覆盖）
 A7 跨边界判定：reason 结构化载荷的 category 允许值清单（Config Schema）被
    Partner 读取 → 已成跨边界承诺，其后续演进移交 SP-07（与本组 SP-08 / SP-10

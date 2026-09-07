@@ -42,7 +42,7 @@ Security Control 执行（权限最小化落地、敏感数据合规控制）
                                         Data Meaning / Ownership / Write Authority
                                         仍以本章 WHAT 与本规程为准（§46）
 Current Data Baseline 的任何更新        → SP-19（§61）
-Emergency Data Repair 的压缩执行与事后对账 → Ch8 + SP-21（pending-definition，组5）；
+Emergency Data Repair 的压缩执行与事后对账 → Ch8 + SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）；
                                         专业动作与证据仍走本规程（§43）
 ```
 
@@ -183,7 +183,7 @@ Recovery Design（§65.5 [MUST][BASELINE] 高风险必有）：从 §33 手段�
 - 验证执行与 Candidate 结论 → **SP-11 / SP-12 / SP-13**；
 - Release 编排与 Target 验证 → **SP-15 / SP-17**（Migration 执行窗口由其编排，执行控制归本规程）；
 - Production Data Fix 走 §42 受控链（Incident / Defect → Fix Design → Scoped Fix Artifact → Review → 必要的 Backup / Verification → Execute → Evidence），Fix Artifact 是 Change Artifact，不是临时 SQL；
-- Emergency Data Repair → **Ch8 + SP-21**（pending-definition，组5）压缩与事后对账，本规程的专业动作与真实数据状态 / 恢复证据不豁免（§43）；
+- Emergency Data Repair → **Ch8 + SP-21**（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）压缩与事后对账，本规程的专业动作与真实数据状态 / 恢复证据不豁免（§43）；
 - 过渡机制 / 双写 / 临时兼容结构携带 Exit Condition 登记，防永久化（§30、§29）。
 
 ---
@@ -293,7 +293,7 @@ Postcondition / 独立验证失败        → 按 Recovery Design 处置（§33�
 兼容组合不可支持（Rollback / 旧 App）→ 回 A5 重定组合或调整 Release 编排（§28、§55）
 Material 设计问题                  → SP-05
 Dual Write 分叉且无冲突 SoT         → 停止双写推进，回 A6 补定义（§31）
-Emergency Data Repair              → Ch8 + SP-21（pending-definition，组5）压缩路径；
+Emergency Data Repair              → Ch8 + SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）压缩路径；
                                      §43 记录链与本规程证据不豁免
 ```
 
@@ -311,7 +311,7 @@ Emergency Data Repair              → Ch8 + SP-21（pending-definition，组5�
 
 ## 11.3 Emergency Data Repair
 
-严重事故可走 Fast Path（§43）：Emergency Approval → Minimal Safe Fix → Verify → Record → Post-facto Review → Change Record / Evidence 补齐 → 必要时更新 Migration / Baseline。压缩执行与事后对账归 Ch8 + SP-21（pending-definition，组5；落地前按 Ch8 正文执行）；Fast Path 不能无痕。
+严重事故可走 Fast Path（§43）：Emergency Approval → Minimal Safe Fix → Verify → Record → Post-facto Review → Change Record / Evidence 补齐 → 必要时更新 Migration / Baseline。压缩执行与事后对账归 Ch8 + SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；落地前按 Ch8 正文执行）；Fast Path 不能无痕。
 
 ## 11.4 低风险纯 DDL 的验证裁剪
 
@@ -378,11 +378,11 @@ RP-ONLINE-API-PY-GH:
   Current Data Baseline = data authority 文档 + alembic head + backfill 状态记录
   高风险验证 = 脱敏 Production-like 副本；Observability = Job 进度 + 数据库指标
 
-RP-B-CLI（pending-definition，组6）:
+RP-B-CLI（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   持久数据面 = 本地状态文件 / 嵌入式 DB（如 SQLite）；Schema 版本化随包发布
   兼容组合 = 新版 CLI + 旧本地状态（升级路径）；Rollback 兼容按安装形态裁剪
 
-RP-C-SDK（pending-definition，组6）:
+RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   通常无自有持久数据权威；携带本地存储 / 缓存 Schema 时：版本化 + 升级路径
   + 旧版本可读性定义；Consumer 不可控 → 存储格式演进按最保守判定
 ```

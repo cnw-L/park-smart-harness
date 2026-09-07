@@ -43,7 +43,7 @@ Build / Provenance 的构建期执行                   → SP-14
   （本规程按风险定义 Integrity / Provenance / SBOM 要求并消费其证据，
    不代替 SP-14 产生 Provenance）
 Release / 部署编排 / Target 验证                  → SP-15 / SP-17
-Emergency 压缩执行与事后对账                       → Ch8 + SP-21（pending-definition，组5）
+Emergency 压缩执行与事后对账                       → Ch8 + SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）
 Current 任何更新                                  → SP-19
 ```
 
@@ -138,7 +138,7 @@ Current 任何更新                          → SP-19
 
 ## A4 — Third-party / Supply Chain 处置
 
-承接 SP-09 移交的 Dependency 事实（或本规程直接识别），评估可信 / 可维护 / 已知风险（§24）：处置 = 采用 / 替代 / 移除 / 缓解，理由成文。发现已知漏洞 → 漏洞响应（影响面 / 修复版本 / 临时缓解 / 验证）——Emergency 级响应走 Ch8 + SP-21（pending-definition，组5）压缩路径，处置记录不豁免。
+承接 SP-09 移交的 Dependency 事实（或本规程直接识别），评估可信 / 可维护 / 已知风险（§24）：处置 = 采用 / 替代 / 移除 / 缓解，理由成文。发现已知漏洞 → 漏洞响应（影响面 / 修复版本 / 临时缓解 / 验证）——Emergency 级响应走 Ch8 + SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）压缩路径，处置记录不豁免。
 
 ## A5 — Secret 安全处置
 
@@ -166,7 +166,7 @@ Secret 进入 Version History / 日志 / Artifact / Error 的处置（Ch9 §20�
 - 验证执行 → **SP-11 / SP-12 / SP-13**；
 - Provenance 产生 → **SP-14**；Release 执行 → **SP-15 / SP-17**；
 - Dependency 事实 ↔ **SP-09**（互不覆盖）；
-- Emergency → **Ch8 + SP-21**（pending-definition，组5）；
+- Emergency → **Ch8 + SP-21**（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）；
 - Current 更新 → **SP-19**。
 
 ---
@@ -258,7 +258,7 @@ Control Tier 判定 + 权限面事实
 Enforcement 无法在可信边界生效       → 回 SP-05 重设计；不得以 Client 措施冒充
 Third-party 风险不可接受且无替代      → 升级决策（Owner / Organization），
                                       不得默认接受
-Emergency 漏洞响应                  → Ch8 + SP-21（pending-definition，组5）
+Emergency 漏洞响应                  → Ch8 + SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）
                                       压缩路径；处置记录不豁免
 验证义务无法定义证据                 → 回 A2 / A3 把要求可验证化，否则要求
                                       本身不成立（Ch4 §18 链路）
@@ -278,7 +278,7 @@ Emergency 漏洞响应                  → Ch8 + SP-21（pending-definition，�
 
 ## 11.3 Emergency 安全响应
 
-严重漏洞 / 数据暴露可走压缩路径（Ch8 + SP-21，pending-definition，组5；落地前按 Ch8 正文执行）；安全分析、处置记录、事后对账不豁免。
+严重漏洞 / 数据暴露可走压缩路径（Ch8 + SP-21，pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；落地前按 Ch8 正文执行）；安全分析、处置记录、事后对账不豁免。
 
 ---
 
@@ -336,11 +336,11 @@ RP-ONLINE-API-PY-GH:
   Supply Chain = GitHub 生态：依赖漏洞匹配 / Secret 扫描 / Actions Attestation
   Release 权限 = 受保护环境 + required checks；小团队职责合一合法
 
-RP-B-CLI（pending-definition，组6）:
+RP-B-CLI（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   分发面 Integrity = Checksum + （外部分发时）Signing；SBOM 随发布自动生成
   Secret = OS keychain 引用；无服务端权限面（Deployment 权限裁剪，理由成文）
 
-RP-C-SDK（pending-definition，组6）:
+RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   外部分发默认增强档：Signing / SBOM / Provenance / Release Archive
   Consumer 不可控 → 供应链证据对外可验证；Safety 领域 SDK 叠加领域标准
 ```

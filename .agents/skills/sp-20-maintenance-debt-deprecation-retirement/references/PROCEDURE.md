@@ -374,12 +374,12 @@ RP-ONLINE-API-PY-GH:
   Retirement = 流量摘除验证（Shutdown Evidence = 健康检查摘除 + 流量
   归零观察）+ 资源清理清单
 
-RP-B-CLI（pending-definition，组6）:
+RP-B-CLI（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   维护 = 版本分发；Backport 受分发成本约束显式判定；Retirement =
   停止分发 + 版本公告（已安装副本无法强制回收——Final State 表达为
   "不再支持"而非"已移除"，Support Policy 表述承担实义）
 
-RP-C-SDK（pending-definition，组6）:
+RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   Retirement = major 版本 EOL 公告 + Consumer 迁移指引；已发布版本
   不可撤回（Yanking 只是分发面动作）；Compatibility 承诺期内 Old
   Consumer 必须工作的义务由 SP-07 域保证

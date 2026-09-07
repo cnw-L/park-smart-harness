@@ -1,7 +1,7 @@
 # SP-20 Maintenance / Debt / Deprecation / Retirement — Operation Contract
 # Machine-loadable mirror of 第五篇-SP20-MaintenanceDebtRetirement-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -415,7 +415,7 @@ spec:
         retirement: traffic-removal verification (shutdown evidence = health-check
                     deregistration + traffic-zero observation) + resource-cleanup
                     list
-    - id: RP-B-CLI   # pending-definition (group-6)
+    - id: RP-B-CLI   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         maintenance: version distribution
         backport: explicitly judged under distribution-cost constraints
@@ -423,7 +423,7 @@ spec:
                     cannot be force-recalled — final state expressed as "no
                     longer supported", not "removed"; the support-policy wording
                     carries the real meaning)
-    - id: RP-C-SDK   # pending-definition (group-6)
+    - id: RP-C-SDK   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         retirement: major-version EOL announcement + consumer migration guidance;
                     released versions are irrevocable (yanking is a

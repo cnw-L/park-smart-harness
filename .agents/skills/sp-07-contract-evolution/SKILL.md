@@ -94,7 +94,7 @@ Run the professional evolution of a change that touches cross-boundary contracts
 - implementation (incl. contract-artifact sync hard rule) -> SP-06
 - verification execution and candidate conclusion -> SP-11 / SP-12 / SP-13
 - delivery and target validation -> SP-15 / SP-17
-- emergency breaking change (§77 four cases) -> Ch8 + SP-21 pending-definition (group-5) for compressed execution and reconciliation; the 8 minimum records and this procedure's compatibility analysis are never exempted
+- emergency breaking change (§77 four cases) -> Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) for compressed execution and reconciliation; the 8 minimum records and this procedure's compatibility analysis are never exempted
 
 ### A10 · Contract debt and health registration
 控制模式：guardrail
@@ -131,7 +131,7 @@ Run the professional evolution of a change that touches cross-boundary contracts
 - material design problem (transition / target change) → SP-05
 - de-facto dependency dispute → explicit three-way disposition (§37); never shelved
 - rollback / stored-message combination unsupportable → back to A4 to redefine combinations or adjust release strategy (§75-76)
-- emergency breaking → Ch8 + SP-21 pending-definition (group-5) compressed path; §77 eight records and this procedure's compatibility analysis never exempted
+- emergency breaking → Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) compressed path; §77 eight records and this procedure's compatibility analysis never exempted
 
 ## 证据义务
 

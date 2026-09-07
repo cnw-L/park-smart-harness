@@ -1,7 +1,7 @@
 # SP-19 Calibration / Current Update / Change Closure — Operation Contract
 # Machine-loadable mirror of 第五篇-SP19-CalibrationCurrentUpdateChangeClosure-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -272,7 +272,7 @@ gate-relevant? has independent accepted follow-up?" # §80-81
 
   returnPaths:
     - condition: ch8 prerequisite missing
-      next: ch8 path; SP-21 / SP-20 pending-definition (group-5); until then follow Ch8 body
+      next: ch8 path; SP-21 / SP-20 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5); until then follow Ch8 body
     - condition: fix-reality by cause
       next: [SP-04 new impact, SP-05 invalid target/design, SP-06 implementation defect,
              SP-13 candidate/evidence, SP-15 / SP-17 delivery/runtime]
@@ -349,11 +349,11 @@ gate-relevant? has independent accepted follow-up?" # §80-81
         data_current: alembic head + backfill state record
         accepted_release_runtime: deployment record / release registry
         ledger: current-update section inside change record (reference style)
-    - id: RP-B-CLI   # pending-definition (group-6)
+    - id: RP-B-CLI   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         runtime_current: absent            # explicitly declared
         accepted_release: published artifact version + channel
-    - id: RP-C-SDK   # pending-definition (group-6)
+    - id: RP-C-SDK   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         runtime_current: absent
         accepted_release: published artifact version + channel

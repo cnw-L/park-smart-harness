@@ -338,7 +338,7 @@ Unit = PR 通常成立；Execution Context 与 Ready 条件折叠进 PR 描述�
 
 ## 11.2 Emergency
 
-Feedback 可压缩（第四篇 Ch5 §79：Emergency 可以压缩 + 事后补齐验证），压缩范围必须显式记录；Failure Classification、Deviation 处置、Ready 最低条件不豁免；事后补齐并 Reconcile（SP-19 已随组3 落地；SP-21 仍 pending-definition，组5）。
+Feedback 可压缩（第四篇 Ch5 §79：Emergency 可以压缩 + 事后补齐验证），压缩范围必须显式记录；Failure Classification、Deviation 处置、Ready 最低条件不豁免；事后补齐并 Reconcile（SP-19 已随组3 落地；SP-21 仍 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）。
 
 ## 11.3 Generated Output 例外
 

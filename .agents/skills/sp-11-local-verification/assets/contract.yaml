@@ -1,7 +1,7 @@
 # SP-11 Local Verification — Operation Contract
 # Machine-loadable mirror of 第五篇-SP11-LocalVerification-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract

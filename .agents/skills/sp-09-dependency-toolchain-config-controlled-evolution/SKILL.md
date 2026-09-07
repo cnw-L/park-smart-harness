@@ -70,7 +70,7 @@ Run the controlled professional evolution of a change touching dependencies / to
 - important config / flag change establishes §42 five elements: identity-revision / change reason / authorization / verification / target state
 - "this config change is not a release" is a gate-zeroing judgment and carries rationale (B1); importance judged by runtime behavior impact (binary unchanged != unchanged)
 - release orchestration hands off to SP-15 / SP-17; this procedure guarantees controlled elements complete
-- further flag lifecycle governance hands to SP-16 pending-definition (group-5); until then covered by SP-15 §11.3 target-changing action
+- further flag lifecycle governance hands to SP-16 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5); until then covered by SP-15 §11.3 target-changing action
 
 ### A7 · Compatibility and cross-boundary judgment
 控制模式：engineering-decision

@@ -15,12 +15,12 @@ metadata:
 
 ## 职责（单一句）
 
-Form an accepted candidate into a release baseline with truthful, immutable identity and explicit scope; make the release decision; make traceable, revalidatable per-target delivery authorization; execute controlled deployment attempts and rollouts; maintain truthful, timely environment current runtime state; and route delivery findings back to the correct layer. SP-14 produces identity, SP-13 decides candidate acceptance and evidence re-evaluation; SP-17 owns target validation and completion; SP-16 owns feature exposure detail (pending-definition, group 5); SP-18 owns recovery execution detail (pending-definition, group 5 — until it lands, recovery execution follows Ch7 §89-102 directly and this procedure keeps the execution records). Release formation never rebuilds a "similar" artifact and claims it verified.
+Form an accepted candidate into a release baseline with truthful, immutable identity and explicit scope; make the release decision; make traceable, revalidatable per-target delivery authorization; execute controlled deployment attempts and rollouts; maintain truthful, timely environment current runtime state; and route delivery findings back to the correct layer. SP-14 produces identity, SP-13 decides candidate acceptance and evidence re-evaluation; SP-17 owns target validation and completion; SP-16 owns feature exposure detail (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group 5); SP-18 owns recovery execution detail (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group 5 — until it lands, recovery execution follows Ch7 §89-102 directly and this procedure keeps the execution records). Release formation never rebuilds a "similar" artifact and claims it verified.
 
 
 ## 边界（本规程不做的事）
 
-Never produces candidate acceptance or evidence applicability conclusions (SP-13), artifact identities (SP-14), target validation conclusions / target release completion / accepted current release updates (SP-17), feature exposure strategy (SP-16, pending-definition), recovery execution detail (SP-18, pending-definition), or any project-level current update (SP-19). Release formation references verified identities; it never rebuilds content. Deployment tool success is never target validation; environment current runtime state is never accepted current release.
+Never produces candidate acceptance or evidence applicability conclusions (SP-13), artifact identities (SP-14), target validation conclusions / target release completion / accepted current release updates (SP-17), feature exposure strategy (SP-16, pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕), recovery execution detail (SP-18, pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕), or any project-level current update (SP-19). Release formation references verified identities; it never rebuilds content. Deployment tool success is never target validation; environment current runtime state is never accepted current release.
 
 
 ## 触发
@@ -122,7 +122,7 @@ Never produces candidate acceptance or evidence applicability conclusions (SP-13
 - recognize the nine trigger classes; assemble actual state + failure/unknown evidence + Ch4 recovery direction + data/contract compatibility check + anchor verification
 - no globally fixed rollback-vs-rollforward choice
 - forward fix producing new software content routes back to SP-06 / SP-13 or the Ch8 compressed path with mandatory after-the-fact reconciliation
-- open the recovery attempt fact frame (eight of the nine P4 Ch7 §98 fields — validation stays with SP-17); execution detail is SP-18 (pending-definition)
+- open the recovery attempt fact frame (eight of the nine P4 Ch7 §98 fields — validation stays with SP-17); execution detail is SP-18 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕)
 - recovery command success is never recovery complete; validation and post-recovery accepted-current-release judgement are SP-17 / SP-18
 - failed attempt / partial state / recovery history never deleted
 

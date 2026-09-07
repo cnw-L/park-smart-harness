@@ -6,7 +6,7 @@
 > 状态：SEALED（2026-08-31：组3 Independent Concept Audit PASS AFTER REPAIR + 横向回归 1050 处引用核验 PASS AFTER REPAIR（备注级）；证据见组3 审计报告与横向回归报告）  
 > 单一职责：在明确 Delivery Target / Deployment Attempt / Rollout Slice 上，验证目标环境中**真实存在**的软件状态、运行行为、依赖、Data / Migration、Transition Invariant 与适用业务 / 质量要求是否达到本次 Delivery / Release Acceptance 所需条件；按 Target Scope 作出 SATISFIED / FAILED / NOT_READY 判定与 Target Release Completion 决策，并在 Completion 后按 Ch1 Ledger 机制更新 Accepted Current Release。  
 > 边界：Target Validation ≠ Ch6 Required Verification 重跑全集（Ch7 §67）；Target Validation PASS ≠ Deployment Tool SUCCESS（§72）；只有有效 Evidence 证明不满足才是 FAIL，证据缺口是 NOT_READY（§73-74）；Validation Maturity 未满足必须保持 NOT_READY（§77、§141 [MUST][BASELINE]）；Target Validation 是 Target-scoped（§79）；Release Completion ≠ Change Closure（§85）。  
-> 与 SP-13 / SP-15 / SP-16 / SP-18 的分工：SP-13 回答"Candidate 本身是否有足够 Candidate-level Evidence"；本规程回答"它到了这个 Target 后是否真的成为预期运行事实"（§67）。SP-15 提供 Deployment Attempt / Runtime State / Observation Record 事实并路由 Delivery Finding；本规程消费这些事实下验证结论。Feature Exposure 状态作为验证 Concern 之一（§70），其变化控制归 SP-15 / SP-16（pending-definition，组5）。Recovery Validation（§100）由本规程定义判定语义，Recovery 执行细节归 SP-18（pending-definition，组5；落地前按 Ch7 §89-102 正文直接执行，执行记录义务由 SP-15 代行）。  
+> 与 SP-13 / SP-15 / SP-16 / SP-18 的分工：SP-13 回答"Candidate 本身是否有足够 Candidate-level Evidence"；本规程回答"它到了这个 Target 后是否真的成为预期运行事实"（§67）。SP-15 提供 Deployment Attempt / Runtime State / Observation Record 事实并路由 Delivery Finding；本规程消费这些事实下验证结论。Feature Exposure 状态作为验证 Concern 之一（§70），其变化控制归 SP-15 / SP-16（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）。Recovery Validation（§100）由本规程定义判定语义，Recovery 执行细节归 SP-18（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；落地前按 Ch7 §89-102 正文直接执行，执行记录义务由 SP-15 代行）。  
 > 结构化镜像：`第五篇-SP17-TargetValidation-OperationContract.yaml`
 
 ---
@@ -29,8 +29,8 @@ F. 发现 Validation Evidence Gap（指标缺失 / smoke 不可用 / 观测断�
 ```text
 Candidate 级 Verification / Acceptance      → SP-13（本规程不重跑全集，§67）
 Release Formation / Authorization / 部署执行 → SP-15（本规程消费其事实，不做交付控制）
-Feature Flag / Launch 设计与执行             → SP-16（pending-definition，组5；暴露状态只是本规程的验证 Concern）
-Recovery 动作执行                            → SP-18（pending-definition，组5；本规程判定恢复后状态是否达标）
+Feature Flag / Launch 设计与执行             → SP-16（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；暴露状态只是本规程的验证 Concern）
+Recovery 动作执行                            → SP-18（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；本规程判定恢复后状态是否达标）
 Change Closure / Current Design 更新         → SP-19（Ch9 域，§85、§145）
 ```
 
@@ -92,8 +92,8 @@ Recovery Validation 结论          恢复后 Target 是否进入预期 Safe Sta
 ```text
 Candidate 级 Verification 结论    → SP-13（§67：不重跑全集）
 Deployment / Rollout 执行控制      → SP-15（Proceed / Pause 决策在 SP-15，本规程提供证据判定）
-Feature Exposure 策略             → SP-16（pending-definition，组5）
-Recovery 动作执行                  → SP-18（pending-definition，组5）
+Feature Exposure 策略             → SP-16（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）
+Recovery 动作执行                  → SP-18（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）
 Change Closure / 项目级 Current 更新 → SP-19（§85、§145）
 ```
 
@@ -222,7 +222,7 @@ Hard Gates：
 [ ] Gap / Finding 全部处置路由；Candidate 缺陷证据已回 SP-15 / SP-13 链
 ```
 
-**完成不代表**：Candidate 被重新验证（SP-13 域）/ 其他 Target Scope 完成（各自判定）/ Feature 已暴露（SP-16，pending-definition）/ Change 关闭或 Current Design 更新（SP-19）/ Incident 解决。
+**完成不代表**：Candidate 被重新验证（SP-13 域）/ 其他 Target Scope 完成（各自判定）/ Feature 已暴露（SP-16，pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕）/ Change 关闭或 Current Design 更新（SP-19）/ Incident 解决。
 
 ---
 
@@ -262,7 +262,7 @@ Maturity 长期无法满足                   → 回 A2 重审条件设计（Ri
                                         禁止悄悄删除条件
 Completion 条件不满足                   → 保持现状，缺口显式；Rollout 侧回 SP-15 A8
                                         （Pause / 回退方向）
-Recovery Validation 未达标              → 保持 NOT_READY → SP-18（pending-definition，
+Recovery Validation 未达标              → 保持 NOT_READY → SP-18（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，
                                         组5）进一步 Recovery / Incident；不得改写
                                         Accepted Current Release 冒充恢复
 ```
@@ -285,7 +285,7 @@ required telemetry 缺失本身就是 NOT_READY（§74）：处置是补观测�
 
 ## 11.4 Emergency
 
-Ch8 fast-path 可压缩验证深度与 Maturity 窗口（§144），但不得建立另一套不留 Evidence、不做 Reconciliation 的机制；压缩的范围与残余风险必须记录，事后经 SP-21（pending-definition，组5）/ SP-19 对账。
+Ch8 fast-path 可压缩验证深度与 Maturity 窗口（§144），但不得建立另一套不留 Evidence、不做 Reconciliation 的机制；压缩的范围与残余风险必须记录，事后经 SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）/ SP-19 对账。
 
 ---
 

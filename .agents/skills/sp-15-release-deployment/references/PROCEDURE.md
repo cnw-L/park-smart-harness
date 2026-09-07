@@ -6,7 +6,7 @@
 > 状态：SEALED（2026-08-31：组3 Independent Concept Audit PASS AFTER REPAIR + 横向回归 1050 处引用核验 PASS AFTER REPAIR（备注级）；证据见组3 审计报告与横向回归报告）  
 > 单一职责：把 Accepted Candidate 形成为**身份真实、范围显式的 Release Baseline**，作出 Release Decision，对每个 Delivery Target 作出可追、可再验证的 Delivery Authorization，执行受控 Deployment Attempt 与 Rollout，维护真实及时的 Environment Current Runtime State，并按 Delivery Finding 分类把问题路由回正确的层。  
 > 边界：Release Formation 引用已验证 Candidate 的实际 Artifact Identity，不得重新 Build"差不多的"产物（Ch7 §9）；Release Decision ≠ Delivery Authorization（§19）；Delivery Authorization 不是永久通行证（§29-30）；Deployment Result ≠ Target Validation Result（§37）；Environment Current Runtime State ≠ Accepted Current Release（§63）；旧 Intent 的异步 Action 不得覆盖被新 Intent 接管的 Target（§114-116）。  
-> 与 SP-13 / SP-14 / SP-16 / SP-17 / SP-18 的分工：SP-14 **生产** Artifact Identity 与 Materialization Delta 事实；SP-13 判定 Candidate Acceptance 与 Evidence Applicability 重评；本规程**引用**身份形成 Release 并控制交付执行；Target Validation 语义、Validation Maturity、Target Release Completion 与 Accepted Current Release 归 **SP-17**；Feature Exposure / Launch 细节归 **SP-16**（pending-definition，组5）；Recovery 执行细节归 **SP-18**（pending-definition，组5；本规程负责 Recovery 触发识别、Decision 输入与 Anchor 真实性核验；SP-18 落地前，Recovery 执行按 Ch7 §89-102 正文直接执行，本规程代行其执行记录义务）。  
+> 与 SP-13 / SP-14 / SP-16 / SP-17 / SP-18 的分工：SP-14 **生产** Artifact Identity 与 Materialization Delta 事实；SP-13 判定 Candidate Acceptance 与 Evidence Applicability 重评；本规程**引用**身份形成 Release 并控制交付执行；Target Validation 语义、Validation Maturity、Target Release Completion 与 Accepted Current Release 归 **SP-17**；Feature Exposure / Launch 细节归 **SP-16**（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）；Recovery 执行细节归 **SP-18**（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；本规程负责 Recovery 触发识别、Decision 输入与 Anchor 真实性核验；SP-18 落地前，Recovery 执行按 Ch7 §89-102 正文直接执行，本规程代行其执行记录义务）。  
 > 结构化镜像：`第五篇-SP15-ReleaseDeployment-OperationContract.yaml`
 
 ---
@@ -32,8 +32,8 @@ G. SP-17 Target Validation Assessment 到达（FAILED / NOT_READY）→ Proceed 
 Candidate 形成 / 绑定 / Acceptance          → SP-13
 Build / Artifact Identity / Provenance      → SP-14
 Target Validation 判定 / Release Completion → SP-17（本规程提供 Deployment 事实与 Observation）
-Feature Flag / Launch 暴露面变化的设计与执行 → SP-16（pending-definition，组5；§86-87；本规程把它当 Target-changing Action 管）
-Recovery 动作的执行与演练                    → SP-18（pending-definition，组5；本规程提供 Trigger / Decision / Anchor）
+Feature Flag / Launch 暴露面变化的设计与执行 → SP-16（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；§86-87；本规程把它当 Target-changing Action 管）
+Recovery 动作的执行与演练                    → SP-18（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；本规程提供 Trigger / Decision / Anchor）
 项目级 Current 更新                          → SP-19（Runtime State 事实由本规程维护，见 §9）
 ```
 
@@ -191,7 +191,7 @@ Migration / Data Failure            → 先判 Implementation / Design / Data As
                                       Target-only / Unknown，再路由（§109）
 Rollout / Transition Failure        → Rollout 控制（A8）/ Ch4 Transition 设计
 Validation Evidence Gap             → SP-17：Target Validation NOT_READY（§110）
-External Dependency                 → 隔离 / 降级，按 SP-09 域处理（pending-definition，
+External Dependency                 → 隔离 / 降级，按 SP-09 域处理（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，
                                       组4；落地前按 Ch3 / Ch5 依赖治理正文执行）
 Requirement / Design / Impact Gap   → SP-05 / SP-04 / 需求权威
 Unknown                             → 保留待查，禁止编造分类
@@ -265,7 +265,7 @@ Hard Gates：
 [ ] Authority / Generation 控制生效，无 Outdated Action 生效事件
 ```
 
-**完成不代表**：Target Validation 通过（SP-17）/ Target Release Completion（SP-17）/ Accepted Current Release 更新（SP-17）/ Feature 已暴露（SP-16，pending-definition）/ Recovery 完成（SP-18，pending-definition）/ Change 关闭或任何项目级 Current 更新（SP-19）。
+**完成不代表**：Target Validation 通过（SP-17）/ Target Release Completion（SP-17）/ Accepted Current Release 更新（SP-17）/ Feature 已暴露（SP-16，pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕）/ Recovery 完成（SP-18，pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕）/ Change 关闭或任何项目级 Current 更新（SP-19）。
 
 ---
 
@@ -319,15 +319,15 @@ Stale / Superseded Action        → 阻止生效，记录事件，审计 Author
 
 ## 11.2 Client / Mobile / Firmware 交付
 
-无服务端 Environment 的交付形态用 Distribution Record / Channel / Cohort / Installation / Adoption Observation / Version Exposure / Withdrawal Record 实现同类语义（§88）；禁止为形式伪造服务端 Environment 记录。Exposure 面变化的细节仍归 SP-16（pending-definition，组5）。
+无服务端 Environment 的交付形态用 Distribution Record / Channel / Cohort / Installation / Adoption Observation / Version Exposure / Withdrawal Record 实现同类语义（§88）；禁止为形式伪造服务端 Environment 记录。Exposure 面变化的细节仍归 SP-16（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）。
 
 ## 11.3 Feature Exposure 变化按交付动作处理
 
-Flag off→on、流量 0%→100% 等会 materially 改变用户行为的变化，按 Target-changing Delivery / Rollout Action 走本规程的 Authority / Observation / Rollout 控制（§86-87）；Flag 设计与生命周期归 SP-16（pending-definition，组5）/ SP-05。
+Flag off→on、流量 0%→100% 等会 materially 改变用户行为的变化，按 Target-changing Delivery / Rollout Action 走本规程的 Authority / Observation / Rollout 控制（§86-87）；Flag 设计与生命周期归 SP-16（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）/ SP-05。
 
 ## 11.4 Emergency
 
-Ch8 fast-path 可压缩授权等待与 Rollout 节奏（§144 接口），但 Authorization Basis 可追、Authority Token 确认、Unknown 不盲重试、Finding 分类、历史保留不豁免；Forward Fix 走压缩路径的强制事后对账（§97）经 SP-21（pending-definition，组5）/ SP-19 补齐。
+Ch8 fast-path 可压缩授权等待与 Rollout 节奏（§144 接口），但 Authorization Basis 可追、Authority Token 确认、Unknown 不盲重试、Finding 分类、历史保留不豁免；Forward Fix 走压缩路径的强制事后对账（§97）经 SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）/ SP-19 补齐。
 
 ---
 

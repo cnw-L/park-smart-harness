@@ -9,6 +9,10 @@
   （段首命令、python -m 模块、或执行包装器通道内）；引号里的提示词 /
   说明文本不再误捕获。历史：整串正则把 `claude -p "...pytest..."` 也
   记成验证证据，且一条误记录即可满足 push_gate 的时间新鲜度检查。
+
+权威源说明（2026-09-06 打包）：本文件自 park-smart-harness 回流为适配层
+权威源（CH-0001 修复版，逐字节），由 generate_skills.py --package 投影进
+software-spec-guide 包；项目侧副本为安装投影，缺陷修复改这里再重装。
 """
 import json
 import os

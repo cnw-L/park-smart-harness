@@ -102,7 +102,7 @@ Run the professional evolution and controlled execution of a change touching per
 - verification execution and candidate conclusion -> SP-11 / SP-12 / SP-13
 - release orchestration and target validation -> SP-15 / SP-17 (migration window orchestrated there; execution control stays here)
 - production data fix follows the §42 controlled chain; fix artifact is a change artifact, never ad-hoc SQL
-- emergency data repair -> Ch8 + SP-21 pending-definition (group-5); professional actions and true data state / recovery evidence never exempted (§43)
+- emergency data repair -> Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5); professional actions and true data state / recovery evidence never exempted (§43)
 - transition mechanisms / dual writes / temp compatibility structures registered with exit conditions against permanentization (§29-30)
 
 ## 硬门禁（不可跳过）
@@ -134,7 +134,7 @@ Run the professional evolution and controlled execution of a change touching per
 - compatibility combination unsupportable (rollback / old app) → back to A5 to redefine combinations or adjust release orchestration (§28, §55)
 - material design problem → SP-05
 - dual-write divergence without conflict source-of-truth → stop dual-write progression; back to A6 to define (§31)
-- emergency data repair → Ch8 + SP-21 pending-definition (group-5) compressed path; §43 record chain and this procedure's evidence never exempted
+- emergency data repair → Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) compressed path; §43 record chain and this procedure's evidence never exempted
 
 ## 证据义务
 

@@ -347,11 +347,11 @@ RP-ONLINE-API-PY-GH:
   Restore = 数据库 PITR / snapshot；repair script 入库版本化；
   演练 = Staging 环境 Recovery Smoke（EA-16）
 
-RP-B-CLI（pending-definition，组6）:
+RP-B-CLI（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   无服务端 Rollback——Recovery = 重新分发旧版本 / Withdrawal Record；
   本地数据迁移回滚受限，修复优先；恢复脚本随 Distribution 版本化
 
-RP-C-SDK（pending-definition，组6）:
+RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   Consumer 侧无法强制回滚——Recovery = 发布 patch 版本 + 兼容指引 /
   迁移说明；Yanking / Withdrawal 是分发面动作（SP-15 §11），
   恢复语义 = 引导 Consumer 到安全版本

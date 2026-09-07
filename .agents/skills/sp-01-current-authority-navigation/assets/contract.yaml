@@ -1,7 +1,7 @@
 # SP-01 Current / Authority Navigation — Operation Contract
 # Machine-loadable mirror of 第五篇-SP01-CurrentAuthorityNavigation-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -172,7 +172,7 @@ spec:
     - id: E-emergency
       rule: minimal current context allowed (runtime/release/deployment/affected-module)
       obligation: unknown portions explicitly tagged; full context reconciled after
-      followUp: [SP-19, SP-21]   # SP-19 sealed (group-3); SP-21 pending-definition (group-5)
+      followUp: [SP-19, SP-21]   # SP-19 sealed (group-3); SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5)
     - id: E-long-running-change
       rule: current context is point-in-time; re-resolve affected concerns on change
       obligation: working-baseline update needs reason + impact decision + updated ref

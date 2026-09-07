@@ -1,7 +1,7 @@
 # AGENTS.md — park-smart-harness（智慧园区 agent harness）
 
 > 本仓库按《软件项目开发工程规范指南》（五篇，SEALED 2026-09）第五篇执行规程开发。
-> 技能源在 `.agents/skills/`（22 个 SP 技能，Agent Skills 开放标准；Claude Code 原生镜像在 `.claude/skills/`）：按需自动调取，不要通读。
+> 技能源在 `.agents/skills/`（23 个技能：sp-00 场景路由 + 22 个 SP 规程，Agent Skills 开放标准；Claude Code 原生镜像在 `.claude/skills/`）：按需自动调取，不要通读。
 > 角色不混淆：本仓库自身是一个 agent harness 产品（内圈控制循环 / 上下文组装 / 工具治理 / RAG）；开发它时，你是执行第五篇规程的工程 agent。
 
 ## 0. 项目速览

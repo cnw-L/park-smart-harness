@@ -1,7 +1,7 @@
 # SP-17 Target Validation / Release Completion — Operation Contract
 # Machine-loadable mirror of 第五篇-SP17-TargetValidation-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -37,8 +37,8 @@ spec:
   boundaryRule: >
     Never re-runs the Ch6 required verification set (SP-13), never controls
     deployment / rollout execution (SP-15), never owns feature exposure strategy
-    (SP-16 — pending-definition, group-5) or recovery execution detail
-    (SP-18 — pending-definition, group-5; until it lands, recovery execution
+    (SP-16 — pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5) or recovery execution detail
+    (SP-18 — pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5; until it lands, recovery execution
     follows P4 Ch7 §89-102 directly and SP-15 keeps the execution records), and
     never performs change closure or project-level current updates (SP-19). Its
     only current write is the per-target-scope accepted current release ledger
@@ -105,8 +105,8 @@ spec:
     nonOutputs:
       - candidate-level-verification        # SP-13
       - deployment-or-rollout-control       # SP-15 (proceed / pause stay there)
-      - feature-exposure-strategy           # SP-16 (pending-definition, group-5)
-      - recovery-execution                  # SP-18 (pending-definition, group-5)
+      - feature-exposure-strategy           # SP-16 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5)
+      - recovery-execution                  # SP-18 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5)
       - change-closure-or-project-current   # SP-19
 
   invariants:
@@ -283,7 +283,7 @@ spec:
       next: hold and expose the gap; rollout side returns to SP-15 A8 (pause /
             reverse direction)
     - condition: recovery validation not reached
-      next: stay NOT_READY -> SP-18 (pending-definition, group-5; until then P4 Ch7
+      next: stay NOT_READY -> SP-18 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5; until then P4 Ch7
             §89-102 body with SP-15 keeping execution records) further recovery /
             incident; never rewrite the accepted current release to fake recovery
 
@@ -304,7 +304,7 @@ spec:
       rule: validation depth and maturity windows compressible under Ch8 fast-path;
             never an evidence-less non-reconciled release mechanism; compressed
             scope and residual risk recorded, reconciled afterwards via SP-21
-            (pending-definition, group-5) / SP-19
+            (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5) / SP-19
 
   evidenceByWork:
     natural:

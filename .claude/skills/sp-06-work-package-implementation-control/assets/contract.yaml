@@ -1,7 +1,7 @@
 # SP-06 Work Package Implementation Control — Operation Contract
 # Machine-loadable mirror of 第五篇-SP06-WorkPackageImplementationControl-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -226,7 +226,7 @@ spec:
                     required-verification-complete, performance-verified,
                     security-verification-complete, candidate-baseline,
                     candidate-accepted, change-done]
-      handoff: SP-07                              # Ch6 candidate identification; SP-07 pending-definition (group-4 — group number corrected in final full-spec regression; SP-07 sealed since 2026-09-01, see group-4 index)
+      handoff: SP-07                              # Ch6 candidate identification; SP-07 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-4 — group number corrected in final full-spec regression; SP-07 sealed since 2026-09-01, see group-4 index)
     - id: A12
       name: Rework and process signal
       controlMode: engineering-decision
@@ -295,7 +295,7 @@ spec:
       rule: feedback breadth may be compressed; failure classification, deviation
             disposition and ready minimum conditions are never waived;
             compression scope explicitly recorded; records reconciled afterwards via
-            SP-19 (sealed, group-3) / SP-21 (pending-definition, group-5)
+            SP-19 (sealed, group-3) / SP-21 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5)
     - id: E-generated-output
       rule: when the toolchain requires editing generated output, record the exception
             reason and regeneration risk

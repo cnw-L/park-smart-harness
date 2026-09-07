@@ -1,7 +1,7 @@
 # SP-15 Release / Deployment — Operation Contract
 # Machine-loadable mirror of 第五篇-SP15-ReleaseDeployment-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -19,8 +19,8 @@ metadata:
     current runtime state; and route delivery findings back to the correct
     layer. SP-14 produces identity, SP-13 decides candidate acceptance and
     evidence re-evaluation; SP-17 owns target validation and completion;
-    SP-16 owns feature exposure detail (pending-definition, group 5); SP-18
-    owns recovery execution detail (pending-definition, group 5 — until it
+    SP-16 owns feature exposure detail (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group 5); SP-18
+    owns recovery execution detail (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group 5 — until it
     lands, recovery execution follows Ch7 §89-102 directly and this
     procedure keeps the execution records).
     Release formation never rebuilds a "similar" artifact and claims it verified.
@@ -40,8 +40,8 @@ spec:
     Never produces candidate acceptance or evidence applicability conclusions
     (SP-13), artifact identities (SP-14), target validation conclusions /
     target release completion / accepted current release updates (SP-17),
-    feature exposure strategy (SP-16, pending-definition), recovery execution
-    detail (SP-18, pending-definition), or any project-level current update
+    feature exposure strategy (SP-16, pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕), recovery execution
+    detail (SP-18, pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕), or any project-level current update
     (SP-19). Release formation references verified identities;
     it never rebuilds content. Deployment tool success is never target
     validation; environment current runtime state is never accepted current
@@ -115,7 +115,7 @@ spec:
       - candidate-acceptance-or-applicability      # SP-13
       - artifact-identity                          # SP-14
       - feature-exposure-strategy                  # SP-16
-      - recovery-execution-or-validation           # SP-18 (pending-definition) / SP-17
+      - recovery-execution-or-validation           # SP-18 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕) / SP-17
       - project-level-current-update               # SP-19; runtime state fact is this
                                                    # procedure's own write (see
                                                    # currentUpdateObligation)
@@ -256,7 +256,7 @@ spec:
         rollout-transition: rollout control / Ch4 transition design
         validation-evidence-gap: SP-17 NOT_READY; high-risk never proceeds on
                                  "looks fine"
-        external-dependency: isolate / degrade; SP-09 domain (pending-definition,
+        external-dependency: isolate / degrade; SP-09 domain (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕,
                              group 4; until it lands, follow the Ch3 / Ch5 dependency
                              governance body)
         requirement-design-impact-gap: SP-05 / SP-04 / requirement authority
@@ -272,7 +272,7 @@ spec:
         - forward fix producing new software content routes back to SP-06 / SP-13
           or the Ch8 compressed path with mandatory after-the-fact reconciliation
         - open the recovery attempt fact frame (eight of the nine P4 Ch7 §98 fields —
-          validation stays with SP-17); execution detail is SP-18 (pending-definition)
+          validation stays with SP-17); execution detail is SP-18 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕)
         - recovery command success is never recovery complete; validation and
           post-recovery accepted-current-release judgement are SP-17 / SP-18
         - failed attempt / partial state / recovery history never deleted
@@ -365,13 +365,13 @@ spec:
     - id: E-feature-exposure-as-delivery
       rule: flag off->on / traffic 0->100% changes that materially alter user
             behavior go through this procedure's authority / observation / rollout
-            controls; flag design and lifecycle stay with SP-16 (pending-definition,
+            controls; flag design and lifecycle stay with SP-16 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕,
             group 5) / SP-05
     - id: E-emergency
       rule: authorization wait and rollout pace compressible under Ch8 fast-path;
             basis traceability, authority token checks, no-blind-retry, finding
             classification and history retention never waived; compressed-path
-            forward fixes reconcile afterwards via SP-21 (pending-definition,
+            forward fixes reconcile afterwards via SP-21 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕,
             group 5) / SP-19
 
   evidenceByWork:

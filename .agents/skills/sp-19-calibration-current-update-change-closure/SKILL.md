@@ -132,7 +132,7 @@ Calibrate a change's actual results into truthful Current: disposition every mat
 
 ## 回退路径（发现问题去哪）
 
-- ch8 prerequisite missing → ch8 path; SP-21 / SP-20 pending-definition (group-5); until then follow Ch8 body
+- ch8 prerequisite missing → ch8 path; SP-21 / SP-20 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5); until then follow Ch8 body
 - fix-reality by cause → ['SP-04 new impact', 'SP-05 invalid target/design', 'SP-06 implementation defect', 'SP-13 candidate/evidence', 'SP-15 / SP-17 delivery/runtime']
 - evidence gap / not ready → complete evidence / reconciliation; never assume-aligned
 - stale current (material concurrent change) → context reconciliation; update calibration basis; new revision or confirm current

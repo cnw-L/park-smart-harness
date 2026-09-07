@@ -21,6 +21,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -u -X utf8 \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_bootstrap.py\""
+          }
+        ]
+      }
     ]
   }
 }

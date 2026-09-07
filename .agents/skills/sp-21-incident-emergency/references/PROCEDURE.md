@@ -378,12 +378,12 @@ RP-ONLINE-API-PY-GH:
   Audit Log + GitOps commit 引用；Postmortem = 文档 + Action Item
   issue 化（Owner / Due / 可验证结束状态）
 
-RP-B-CLI（pending-definition，组6）:
+RP-B-CLI（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   Emergency 影响 = 已分发副本（无法远程止血）——Mitigation 面收窄为
   停止分发 / 公告 + 快速 patch 版本；Kill switch 能力受限的形态在
   SP-16 已显式登记，此处按登记事实裁剪 Mitigation 手段
 
-RP-C-SDK（pending-definition，组6）:
+RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   Consumer 侧 Incident = 兼容性断裂面——Mitigation = patch 版本 +
   迁移指引发布；已发布版本不可撤回，Reconciliation 的 Deferred 面
   含 Consumer 迁移进度跟踪

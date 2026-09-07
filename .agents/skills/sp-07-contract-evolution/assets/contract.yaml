@@ -1,7 +1,7 @@
 # SP-07 Contract Evolution — Operation Contract
 # Machine-loadable mirror of 第五篇-SP07-ContractEvolution-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -180,7 +180,7 @@ spec:
         - verification execution and candidate conclusion -> SP-11 / SP-12 / SP-13
         - delivery and target validation -> SP-15 / SP-17
         - emergency breaking change (§77 four cases) -> Ch8 + SP-21
-          pending-definition (group-5) for compressed execution and reconciliation;
+          pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) for compressed execution and reconciliation;
           the 8 minimum records and this procedure's compatibility analysis are
           never exempted
     - id: A10
@@ -255,7 +255,7 @@ spec:
     - condition: rollback / stored-message combination unsupportable
       next: back to A4 to redefine combinations or adjust release strategy (§75-76)
     - condition: emergency breaking
-      next: Ch8 + SP-21 pending-definition (group-5) compressed path; §77 eight
+      next: Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) compressed path; §77 eight
             records and this procedure's compatibility analysis never exempted
 
   exceptions:
@@ -272,7 +272,7 @@ spec:
     - id: E-emergency-breaking
       rule: §77 four cases may compress deprecation window; 8 minimum records never
             exempted; compressed execution and post-hoc reconciliation = Ch8 +
-            SP-21 pending-definition (group-5); compatibility and consumer impact
+            SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5); compatibility and consumer impact
             analysis stays here
     - id: E-one-off-internal
       rule: coordinatable atomic upgrade allowed without Parallel Change (§48);
@@ -329,12 +329,12 @@ spec:
         internal_event: schema + semantic documentation
         consumer_picture: service dependency map + repository search
         verification: module test + optional CDC
-    - id: RP-B-CLI   # pending-definition (group-6)
+    - id: RP-B-CLI   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         contract_surface: commands / parameters / output format (incl. JSON output stability)
         versioning: SemVer on package version
         consumer: downstream scripts / CI integrations; no long-lived online consumer
-    - id: RP-C-SDK   # pending-definition (group-6)
+    - id: RP-C-SDK   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         contract_surface: public API surface; strict SemVer; strongest compatibility window
         deprecation: precedes removal (at least one minor marked)

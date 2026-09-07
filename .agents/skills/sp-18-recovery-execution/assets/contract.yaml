@@ -1,7 +1,7 @@
 # SP-18 Recovery Execution — Operation Contract
 # Machine-loadable mirror of 第五篇-SP18-RecoveryExecution-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -354,13 +354,13 @@ spec:
         restore: database PITR / snapshot
         repair_scripts: versioned in repo
         rehearsal: staging recovery smoke (EA-16)
-    - id: RP-B-CLI   # pending-definition (group-6)
+    - id: RP-B-CLI   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         server_side_rollback: none — recovery = redistribute old version /
                               withdrawal record
         local_data: migration rollback limited, fix-first
         recovery_scripts: versioned with distribution
-    - id: RP-C-SDK   # pending-definition (group-6)
+    - id: RP-C-SDK   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         forced_rollback: impossible consumer-side — recovery = publish patch
                          version + compatibility guidance / migration notes

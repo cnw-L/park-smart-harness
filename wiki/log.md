@@ -39,3 +39,11 @@
 - 首条治理工件入库（`da1f75f`，192 文件），用户产品 WIP 未触碰未提交。
 
 
+
+## [2026-09-07] Ingest | CH-0002 治理面升级 v1.1.0——本地升级路径钉死 + audit R10 新面
+
+- JG-05：SP-01（权威源=适配层，项目侧为投影）/ SP-03（基线 `130605d` + 本记录 changes/CH-0002）/ SP-09（hooks/settings/git-hooks 配置面受控变更）/ SP-11（两端 85+85 + pilot 513 passed/24 skipped + check-fresh FRESH）/ SP-19 本条。
+- 教训一：hooks 漂移比对在 Windows 必须 `diff --strip-trailing-cr`（4 个"假 DIFF"全是 EOL 噪音，真差异只有 push_gate 重构与两个新文件）。
+- 教训二：命令串含 `git push` 字面量会被权限沙箱拦截——门禁行为验证改走测试矩阵（58 passed），不模拟真实 push 串。
+- 教训三：个别证据行缺 `exit_code` 字段（行 37-45），R6/R8 不依赖故门禁无恙；未来 exit_code 预筛 hint（FAIL→PASS 检测）落地前须先修捕获字段完整性。
+- 详见 patterns/local-upgrade-path.md；判例见 decisions.md。

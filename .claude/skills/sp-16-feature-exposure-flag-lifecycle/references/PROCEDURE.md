@@ -340,12 +340,12 @@ RP-ONLINE-API-PY-GH:
   暴露变化走 SP-15 受控链（与 Binary Release 同链）；观察面 = per-slice
   metrics（error / latency / business signal）
 
-RP-B-CLI（pending-definition，组6）:
+RP-B-CLI（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   无服务端 Flag——Launch = Distribution 到达（Channel / Cohort 分阶段）；
   Version Exposure / Adoption Observation 承载暴露语义；Kill switch 能力
   受限（安装后无远程开关的形态显式登记）
 
-RP-C-SDK（pending-definition，组6）:
+RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   无运行时 Flag——Launch = Consumer 升级采用；暴露面 = Adoption /
   版本分布观察；兼容策略（Old Consumer 必须工作）在发布前由 SP-07 /
   SP-05 保证

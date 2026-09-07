@@ -20,7 +20,7 @@ On an explicit delivery target / deployment attempt / rollout slice, validate wh
 
 ## 边界（本规程不做的事）
 
-Never re-runs the Ch6 required verification set (SP-13), never controls deployment / rollout execution (SP-15), never owns feature exposure strategy (SP-16 — pending-definition, group-5) or recovery execution detail (SP-18 — pending-definition, group-5; until it lands, recovery execution follows P4 Ch7 §89-102 directly and SP-15 keeps the execution records), and never performs change closure or project-level current updates (SP-19). Its only current write is the per-target-scope accepted current release ledger transition after target release completion.
+Never re-runs the Ch6 required verification set (SP-13), never controls deployment / rollout execution (SP-15), never owns feature exposure strategy (SP-16 — pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5) or recovery execution detail (SP-18 — pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5; until it lands, recovery execution follows P4 Ch7 §89-102 directly and SP-15 keeps the execution records), and never performs change closure or project-level current updates (SP-19). Its only current write is the per-target-scope accepted current release ledger transition after target release completion.
 
 
 ## 触发
@@ -137,7 +137,7 @@ Never re-runs the Ch6 required verification set (SP-13), never controls deployme
 - target validation NOT_READY → add evidence / fix observability / await maturity / controlled exception / block; never relabel as PASS or FAIL
 - maturity durably unreachable → re-review condition design (risk change) or escalate; silently deleting the condition forbidden
 - completion conditions unmet → hold and expose the gap; rollout side returns to SP-15 A8 (pause / reverse direction)
-- recovery validation not reached → stay NOT_READY -> SP-18 (pending-definition, group-5; until then P4 Ch7 §89-102 body with SP-15 keeping execution records) further recovery / incident; never rewrite the accepted current release to fake recovery
+- recovery validation not reached → stay NOT_READY -> SP-18 (pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5; until then P4 Ch7 §89-102 body with SP-15 keeping execution records) further recovery / incident; never rewrite the accepted current release to fake recovery
 
 ## 证据义务
 

@@ -1,7 +1,7 @@
 # SP-10 Security / Supply Chain Control — Operation Contract
 # Machine-loadable mirror of 第五篇-SP10-SecuritySupplyChainControl-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -144,7 +144,7 @@ spec:
           adopt / replace / remove / mitigate with rationale recorded
         - known vulnerability -> vulnerability response (impact scope / fix
           version / temporary mitigation / verification); emergency-level
-          response via Ch8 + SP-21 pending-definition (group-5) compressed path,
+          response via Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) compressed path,
           disposition records never exempted
     - id: A5
       name: Secret security disposition
@@ -201,7 +201,7 @@ spec:
         - verification execution -> SP-11 / SP-12 / SP-13
         - provenance production -> SP-14; release execution -> SP-15 / SP-17
         - dependency facts <-> SP-09 (never mutually covering)
-        - emergency -> Ch8 + SP-21 pending-definition (group-5)
+        - emergency -> Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5)
         - current updates -> SP-19
 
   gates:
@@ -264,7 +264,7 @@ spec:
     - condition: third-party risk unacceptable with no alternative
       next: escalate decision (owner / organization); never silently accept
     - condition: emergency vulnerability response
-      next: Ch8 + SP-21 pending-definition (group-5) compressed path;
+      next: Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) compressed path;
             disposition records never exempted
     - condition: verification obligation cannot define evidence
       next: back to A2 / A3 to verifiabilize; otherwise the requirement itself
@@ -283,7 +283,7 @@ spec:
             traceability never exempted (G-SP10-05)
     - id: E-emergency-security-response
       rule: severe vulnerability / data exposure may take the compressed path
-            (Ch8 + SP-21 pending-definition, group-5; until then follow Ch8
+            (Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕, group-5; until then follow Ch8
             body); security analysis, disposition records, post-hoc
             reconciliation never exempted
 
@@ -343,13 +343,13 @@ spec:
                       secret scanning / actions attestation
         release_permission: protected environments + required checks; small-team
                             combined duties legal
-    - id: RP-B-CLI   # pending-definition (group-6)
+    - id: RP-B-CLI   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         distribution_integrity: checksum + (external distribution) signing;
                                 SBOM auto-generated with release
         secret: OS keychain reference; no server-side permission face
                 (deployment permission tailored, rationale recorded)
-    - id: RP-C-SDK   # pending-definition (group-6)
+    - id: RP-C-SDK   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         default_tier: enhanced — signing / SBOM / provenance / release archive
         consumer: uncontrollable -> supply chain evidence externally verifiable;

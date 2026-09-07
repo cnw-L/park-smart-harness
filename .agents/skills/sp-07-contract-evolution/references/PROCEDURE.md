@@ -151,7 +151,7 @@ Deprecated Contract 登记八项（§53）：Deprecated What / Replacement / Rea
 - 实现执行（含 Contract Artifact 同步硬规则）→ **SP-06**；
 - 验证执行与 Candidate 结论 → **SP-11 / SP-12 / SP-13**；
 - 交付与 Target 验证 → **SP-15 / SP-17**；
-- Emergency Breaking Change（§77：Critical Security Vulnerability / Regulatory / Data Exposure / Severe Production Risk）→ 压缩执行与事后对账归 **Ch8 + SP-21**（pending-definition，组5），但 §77 八项最低记录（Reason / Risk / Affected Consumer / Emergency Decision / Communication / Mitigation / Verification / Follow-up Migration）与本规程的兼容分析**不豁免**。
+- Emergency Breaking Change（§77：Critical Security Vulnerability / Regulatory / Data Exposure / Severe Production Risk）→ 压缩执行与事后对账归 **Ch8 + SP-21**（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5），但 §77 八项最低记录（Reason / Risk / Affected Consumer / Emergency Decision / Communication / Mitigation / Verification / Follow-up Migration）与本规程的兼容分析**不豁免**。
 
 ## A10 — Contract Debt 与 Health 登记
 
@@ -248,7 +248,7 @@ Consumer 图景不可知且变化关键       → 先补 Consumer 信息（§43-
 Material 设计问题（Transition / 目标变化）→ SP-05
 De-facto Dependency 争议           → 三选一显式决策（§37），不得搁置
 Rollback / Stored Message 组合不可支持 → 回 A4 重定组合或调整 Release 策略（§75-76）
-Emergency Breaking                 → Ch8 + SP-21（pending-definition，组5）压缩路径；
+Emergency Breaking                 → Ch8 + SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）压缩路径；
                                      §77 八项记录与本规程兼容分析不豁免
 ```
 
@@ -266,7 +266,7 @@ Emergency Breaking                 → Ch8 + SP-21（pending-definition，组5�
 
 ## 11.3 Emergency Breaking Change
 
-§77 四类情形可压缩 Deprecation Window；八项最低记录不豁免；压缩执行与事后工程对账归 Ch8 + SP-21（pending-definition，组5；落地前按 Ch8 正文执行），Compatibility 与 Consumer 影响分析仍走本规程。
+§77 四类情形可压缩 Deprecation Window；八项最低记录不豁免；压缩执行与事后工程对账归 Ch8 + SP-21（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5；落地前按 Ch8 正文执行），Compatibility 与 Consumer 影响分析仍走本规程。
 
 ## 11.4 一次性内部系统
 
@@ -326,11 +326,11 @@ RP-ONLINE-API-PY-GH:
   HTTP Contract Artifact = OpenAPI（CI diff check）；Internal Event = Schema + 语义文档
   Consumer 图景 = Service Dependency Map + Repository Search；Module Test + 可选 CDC
 
-RP-B-CLI（pending-definition，组6）:
+RP-B-CLI（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   Contract 面 = 命令 / 参数 / 输出格式（含 JSON 输出稳定性）；SemVer 于包版本
   Consumer = 下游脚本 / CI 集成；无长期在线 Consumer，Rollback 兼容按安装形态裁剪
 
-RP-C-SDK（pending-definition，组6）:
+RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）:
   Contract 面 = Public API Surface；严格 SemVer；兼容窗口最强
   Deprecation 先行于 Removal（至少一个 Minor 标记）；Consumer 不可控 → 最保守判定
 ```

@@ -1,7 +1,7 @@
 # SP-21 Incident / Emergency — Operation Contract
 # Machine-loadable mirror of 第五篇-SP21-IncidentEmergency-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -407,14 +407,14 @@ spec:
         action_trace: deployment-platform audit log + GitOps commit references
         postmortem: document + action items as issues (owner / due / verifiable
                     end state)
-    - id: RP-B-CLI   # pending-definition (group-6)
+    - id: RP-B-CLI   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         blast_radius: distributed copies — no remote mitigation; mitigation
                       narrows to stop-distribution / announcement + fast
                       patch version
         kill_switch: limited; forms without remote switches registered in
                      SP-16, mitigation means tailored to those registered facts
-    - id: RP-C-SDK   # pending-definition (group-6)
+    - id: RP-C-SDK   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         incident_face: consumer-side compatibility break — mitigation = patch
                        version + migration guidance release

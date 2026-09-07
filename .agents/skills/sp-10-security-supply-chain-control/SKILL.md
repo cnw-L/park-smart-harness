@@ -55,7 +55,7 @@ Run controlled professional security control for a change touching the security 
 控制模式：engineering-decision
 
 - taking over SP-09 dependency facts (or directly identified), assess trustworthiness / maintainability / known risk (§24); disposition = adopt / replace / remove / mitigate with rationale recorded
-- known vulnerability -> vulnerability response (impact scope / fix version / temporary mitigation / verification); emergency-level response via Ch8 + SP-21 pending-definition (group-5) compressed path, disposition records never exempted
+- known vulnerability -> vulnerability response (impact scope / fix version / temporary mitigation / verification); emergency-level response via Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) compressed path, disposition records never exempted
 
 ### A5 · Secret security disposition
 控制模式：engineering-decision + guardrail
@@ -95,7 +95,7 @@ Run controlled professional security control for a change touching the security 
 - verification execution -> SP-11 / SP-12 / SP-13
 - provenance production -> SP-14; release execution -> SP-15 / SP-17
 - dependency facts <-> SP-09 (never mutually covering)
-- emergency -> Ch8 + SP-21 pending-definition (group-5)
+- emergency -> Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5)
 - current updates -> SP-19
 
 ## 硬门禁（不可跳过）
@@ -125,7 +125,7 @@ Run controlled professional security control for a change touching the security 
 - security requirement discovered after code completion → handle as new impact (SP-04); never patch in place
 - enforcement cannot be effective at trusted boundary → back to SP-05 redesign; client measures never impersonate enforcement
 - third-party risk unacceptable with no alternative → escalate decision (owner / organization); never silently accept
-- emergency vulnerability response → Ch8 + SP-21 pending-definition (group-5) compressed path; disposition records never exempted
+- emergency vulnerability response → Ch8 + SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5) compressed path; disposition records never exempted
 - verification obligation cannot define evidence → back to A2 / A3 to verifiabilize; otherwise the requirement itself does not stand (Ch4 §18 chain)
 
 ## 证据义务

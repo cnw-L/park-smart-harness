@@ -70,7 +70,7 @@ SP-19 **不输出**：
 ```text
 Candidate Acceptance / Required Verification 结论（Ch6 / SP-13）
 Release / Target Validation 执行（Ch7 / SP-15 / SP-17）
-Fence / Transfer / Emergency Reconciliation（Ch8；SP-21 pending-definition，组5）
+Fence / Transfer / Emergency Reconciliation（Ch8；SP-21 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组5）
 对 WHAT 的新定义（Requirement / Contract / Data 长什么样不归本规程决定）
 ```
 
@@ -364,7 +364,7 @@ UPDATE_ACCEPTED_AUTHORITY 必须先经该 Concern 真实 Authority 的 Decision�
 SP-01 / SP-03~06 等任何其他规程不得直接写 Current（规则不变）。
 ```
 
-组1 / 组2 各规程中的过渡条款（"SP-19 落地前，Current 校准 / 更新 = Domain Authority 显式登记的 Change"）自本规程 SEALED 起由本规程正式承接；届时需回改组1 / 组2 文档中的 pending-definition 标记（列入组3 横向回归检查项）。
+组1 / 组2 各规程中的过渡条款（"SP-19 落地前，Current 校准 / 更新 = Domain Authority 显式登记的 Change"）自本规程 SEALED 起由本规程正式承接；届时需回改组1 / 组2 文档中的 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 标记（列入组3 横向回归检查项）。
 
 ---
 
@@ -372,7 +372,7 @@ SP-01 / SP-03~06 等任何其他规程不得直接写 Current（规则不变）�
 
 ```text
 Ch8 前置缺失（Emergency / Cancel / Supersede / Partial）  → 回 Ch8 路径；
-                                   SP-21 / SP-20 pending-definition（组5），
+                                   SP-21 / SP-20 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕（组5），
                                    落地前按 Ch8 正文执行
 FIX_REALITY 按原因（§23）：
   New Impact                    → SP-04
@@ -448,7 +448,7 @@ RP-ONLINE-API-PY-GH：
   Data Current                         alembic head + backfill 状态记录
   Accepted Release / Runtime           deployment record / release registry
   Ledger                               Change Record 内的 Current Update 段（引用式）
-RP-B-CLI / RP-C-SDK（pending-definition，组6）：
+RP-B-CLI / RP-C-SDK（pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕，组6）：
   Runtime Current 显式 absent；Accepted Release = published artifact version + channel
 ```
 

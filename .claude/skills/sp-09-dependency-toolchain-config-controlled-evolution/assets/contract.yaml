@@ -1,7 +1,7 @@
 # SP-09 Dependency / Toolchain / Config Controlled Evolution — Operation Contract
 # Machine-loadable mirror of 第五篇-SP09-DependencyToolchainConfig-正式操作规程.md
 # The Markdown body is the normative source; this contract is its structured projection
-# for harness execution (park-smart-harness). Semantics must not diverge: if they do,
+# for harness execution (harness-agnostic). Semantics must not diverge: if they do,
 # repair the projection, never the reverse (GI-13).
 apiVersion: spec.part5/v1alpha1
 kind: OperationContract
@@ -161,7 +161,7 @@ spec:
           (binary unchanged != unchanged)"
         - release orchestration hands off to SP-15 / SP-17; this procedure
           guarantees controlled elements complete
-        - further flag lifecycle governance hands to SP-16 pending-definition
+        - further flag lifecycle governance hands to SP-16 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕
           (group-5); until then covered by SP-15 §11.3 target-changing action
     - id: A7
       name: Compatibility and cross-boundary judgment
@@ -321,12 +321,12 @@ spec:
         config: env vars + versioned config definitions
         secret: platform injection (reference traceable)
         config_release: same controlled chain as binary
-    - id: RP-B-CLI   # pending-definition (group-6)
+    - id: RP-B-CLI   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         dependency_determinism: lockfile / vendoring
         config: user config file (path and schema versioned)
         secret: OS keychain / external injection reference; no server-side env face
-    - id: RP-C-SDK   # pending-definition (group-6)
+    - id: RP-C-SDK   # pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-6)
       bindings:
         dependency_minimization: strongest — SDK dependencies enter the consumer's
                                  dependency tree (§23 weight highest)
@@ -356,7 +356,7 @@ spec:
       §42 (identity cfg-wo-118 / reason partner network jitter / authorization
       service owner / verification timeout behavior test / target 10s), release
       orchestration handed to SP-15; flag lifecycle governance -> SP-16
-      pending-definition (group-5), until then covered by SP-15 §11.3. The
+      pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕 (group-5), until then covered by SP-15 §11.3. The
       category allowed-value list of the structured reason payload (config
       schema) read by the partner is judged a cross-boundary commitment (same
       fact setting as the SP-08 / SP-10 examples) -> future evolution handed

@@ -426,7 +426,7 @@ SP-19 Calibration / Current Update
 SP-02 Foundation Revalidation
 ```
 
-> 注：SP-19 已随组3 落地为正式 Current 校准 / 更新规程（SEALED；见《第五篇-CurrentBaseline总索引》）——此前的临时路径（Domain Authority 以显式记录的 Change 执行校准）由 SP-19 正式承接。SP-21 仍为 pending-definition（组5）。本规程自身不更新 Current 的规则不变。
+> 注：SP-19 已随组3 落地为正式 Current 校准 / 更新规程（SEALED；见《第五篇-CurrentBaseline总索引》）——此前的临时路径（Domain Authority 以显式记录的 Change 执行校准）由 SP-19 正式承接。SP-21 仍为 pending-definition〔历史标注：所指接口均已 SEALED 落地，见 第五篇-CurrentBaseline总索引 §2〕（组5）。本规程自身不更新 Current 的规则不变。
 
 ---
 
