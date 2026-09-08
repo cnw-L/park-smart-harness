@@ -19,7 +19,7 @@ def test_loop_delegates_to_injected_subsystems_and_persists():
     calls = {"assemble": 0, "execute": 0}
 
     class SpyAssembler:
-        def assemble(self, config, conversation):
+        async def assemble(self, config, conversation):
             calls["assemble"] += 1
             return [Message(role="system", content="sys"), *conversation.messages]
 

@@ -236,7 +236,7 @@ async def run_loop(
             buffer: list[Message] = []
 
             # 组装本轮上下文;超硬阈则压缩(各自独立 commit、自己的边界)再重组,thrash 守卫兜底。
-            prompt = assembler.assemble(config, conversation)
+            prompt = await assembler.assemble(config, conversation)
             if compaction is not None:
                 n_compact = 0
                 while compaction.should_compact(prompt):
@@ -252,7 +252,7 @@ async def run_loop(
                     budget.consume(iterations=1)         # 压缩=一次 aux 模型调用,计预算(诚实+兜底)
                     await _safe_commit(store, thread_id, list(pair),
                         Boundary("iteration", f"turn-{seq}", seq, None, budget.snapshot()))
-                    prompt = assembler.assemble(config, conversation)
+                    prompt = await assembler.assemble(config, conversation)
                     n_compact += 1
 
             committed_len = len(conversation.messages)  # 回滚标记(压缩已 commit、纳入基线)

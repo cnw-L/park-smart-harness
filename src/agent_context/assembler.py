@@ -29,7 +29,7 @@ from .history import (
     is_dropped_result, trim_dialogue_turns,
 )
 from .knowledge import KNOWLEDGE_TOOL, wrap_knowledge
-from .memory import render_user
+from .memory import MemoryEngine, render_memory, render_user
 from .plan_view import exclude_plan_calls, render_plan
 from .system_prompt import PromptSelection, compose
 from .tokens import estimate_tokens
@@ -44,6 +44,7 @@ class ParkContextAssembler:
         knowledge_tools=frozenset({KNOWLEDGE_TOOL}),
         control_tools=frozenset(),
         subagent_tools=frozenset(),
+        memory_engine: MemoryEngine | None = None,
         keep_recent_turns: int = 8,
         keep_first: int = 1,
         soft_token_cap: int = 8000,
@@ -52,23 +53,39 @@ class ParkContextAssembler:
         self._knowledge = set(knowledge_tools)
         self._control = set(control_tools)            # 控制类工具名(结果套"已执行"框,非"现状")
         self._subagent = set(subagent_tools)          # 子 agent 工具名(结果套"子 agent 回报"框)
+        self._memory_engine = memory_engine           # 长期记忆检索引擎(可选)
         self._keep_recent_turns = keep_recent_turns   # 裁剪:保留的最近对话**轮数**
         self._keep_first = keep_first
         self._soft_token_cap = soft_token_cap         # 总量观测阈(§2.4 token 可见·超阈告警)
         self._context_window = context_window         # 模型上下文窗口(算余量%;qwen3.5-9b=32768)
 
     # ── ContextAssembler 协议 ────────────────────────────────────────────────
-    def assemble(self, config, conversation) -> list[Message]:
+    async def assemble(self, config, conversation) -> list[Message]:
         # 缺 user 保护(与旧桩 LayeredContextAssembler 同):role-alternation 要求 system 后先 user。
         if not any(m.role == "user" for m in conversation.messages):
             raise ValueError("上下文组装失败:会话缺少 user 消息(调用方需先 seed 用户消息)")
 
-        # 系统头:固定层 + 记忆层(并进一条 system)
+        # 系统头:固定层 + 记忆层(身份事实 + 召回的长期记忆,并进一条 system)
         sel = PromptSelection.from_config(config)
         system_text = compose(sel)
         user_sec = render_user(getattr(conversation, "principal", None))
         if user_sec:
             system_text = f"{system_text}\n\n{user_sec}"
+        # 长期记忆召回注入(v1 可选;无 memory_engine 时不触发)
+        if self._memory_engine is not None:
+            last_user_msg = next(
+                (m for m in reversed(conversation.messages) if m.role == "user"),
+                None,
+            )
+            query = last_user_msg.content if last_user_msg else ""
+            recalled = await self._memory_engine.recall(
+                conversation.principal,
+                query,
+                current_thread_id=conversation.thread_id,
+            )
+            memory_sec = render_memory(recalled, max_chars=self._memory_engine.max_chars)
+            if memory_sec:
+                system_text = f"{system_text}\n\n{memory_sec}"
         out: list[Message] = [Message(role="system", content=system_text)]
 
         # 消息流:有压缩摘要 → 先在**原始 messages** 上 apply(与 select_compaction_span 的 step

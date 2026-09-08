@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from typing import Any
@@ -73,16 +74,19 @@ class PgStore:
         # 注入池 → 不拥有（不应关闭）
         self._pool_owned: bool = pool is None
         self._schema_ready: bool = False
+        self._pool_lock: asyncio.Lock = asyncio.Lock()
 
     # ------------------------------------------------------------------
     # 内部辅助
     # ------------------------------------------------------------------
 
     async def _get_pool(self) -> Any:
-        """延迟建池（第一次 I/O 才真正连接）。"""
+        """延迟建池（第一次 I/O 才真正连接）；锁防并发首访建多池泄漏。"""
         if self._pool is None:
-            import asyncpg  # type: ignore[import]
-            self._pool = await asyncpg.create_pool(self._dsn)
+            async with self._pool_lock:
+                if self._pool is None:           # DCL：锁内二次判空
+                    import asyncpg  # type: ignore[import]
+                    self._pool = await asyncpg.create_pool(self._dsn)
         return self._pool
 
     async def _ensure_schema(self) -> None:
@@ -152,15 +156,28 @@ class PgIdempotencyLedger:
             )
         return row is not None
 
-    async def update(self, idem_key: str, status: str, result: dict) -> None:
-        """WAL 第二阶段:把已存在的 in_flight 行更新为最终 status(done/failed)+ result。"""
+    async def update(self, idem_key: str, status: str, result: dict,
+                     expected_status: str | None = None) -> bool:
+        """WAL 第二阶段/重试重置:把行更新为 status。
+
+        expected_status 给定时做 CAS(WHERE status=expected_status):仅当当前状态匹配才更新,
+        返回是否真更新了一行(并发重试 lost -> False,调用方据此不重发)。不给 -> 无条件更新,返回 True。
+        """
         await self._store._ensure_schema()
         pool = await self._store._get_pool()
         async with pool.acquire() as conn:
-            await conn.execute(
-                "UPDATE agentloop_idem SET status=$2, result_json=$3::jsonb WHERE idem_key=$1",
-                idem_key, status, json.dumps(result),
+            if expected_status is None:
+                await conn.execute(
+                    "UPDATE agentloop_idem SET status=$2, result_json=$3::jsonb WHERE idem_key=$1",
+                    idem_key, status, json.dumps(result),
+                )
+                return True
+            row = await conn.fetchrow(
+                "UPDATE agentloop_idem SET status=$2, result_json=$3::jsonb "
+                "WHERE idem_key=$1 AND status=$4 RETURNING idem_key",
+                idem_key, status, json.dumps(result), expected_status,
             )
+            return row is not None
 
 
 # ---------------------------------------------------------------------------
@@ -185,8 +202,12 @@ class PgControlCapability:
         # 真实执行计数（幂等重入不增加）
         self.execute_count: int = 0
 
-    def freeze(self, call: ToolCallReq) -> PendingAction:
-        """铸造 PendingAction：每次产生全新 idem_key，args 深拷贝。"""
+    def freeze(self, call: ToolCallReq, thread_id: str = "") -> PendingAction:
+        """铸造 PendingAction：每次产生全新 idem_key，args 深拷贝。
+
+        thread_id 仅为协议一致(ControlCapability.freeze 签名);本桩不按会话切片,
+        真实现 ProposalControlCapability 才按 thread_id 取提案。
+        """
         idem_key = uuid4().hex
         frozen_action = {"name": call.name, "arguments": dict(call.arguments)}
         return PendingAction(

@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from typing import Any
 
 from .config import LoopConfig
@@ -45,6 +46,39 @@ def _reasoning_text(message: Any) -> str:
 def _qwen_extra_body(enable_thinking: bool) -> dict:
     """生成 qwen/vLLM 的 extra_body（控制 thinking 开关）。"""
     return {"chat_template_kwargs": {"enable_thinking": enable_thinking}}
+
+
+# <think> 思考块:qwen 即使 enable_thinking=False,偶发仍把思考链以 <think> 标签塞进
+# content(而非结构化 reasoning_content)。统一剥离,防思考漏进最终答案 + 防 content
+# 原样回传污染多轮历史。剥出的思考并入 reasoning,仍经 think 事件在过程面板可见。
+_THINK_BLOCK_RE = re.compile(r"<think\s*>(.*?)</think\s*>", re.IGNORECASE | re.DOTALL)
+_THINK_OPEN_RE = re.compile(r"<think\s*>", re.IGNORECASE)
+_THINK_CLOSE_RE = re.compile(r"</think\s*>", re.IGNORECASE)
+
+
+def _split_think(content: str) -> tuple[str, str]:
+    """剥离 <think>...</think> 思考块,返回 (干净 content, 思考文本)。
+
+    未闭合的 <think>(max_tokens 截断等)取到串尾整段作思考。
+    """
+    think_parts: list[str] = []
+
+    def _capture(m):
+        think_parts.append(m.group(1))
+        return ""
+
+    cleaned = _THINK_BLOCK_RE.sub(_capture, content)
+
+    # 残留未闭合 <think>:从首个开标签到串尾整段作思考
+    m_open = _THINK_OPEN_RE.search(cleaned)
+    if m_open:
+        think_parts.append(cleaned[m_open.end():])
+        cleaned = cleaned[: m_open.start()]
+
+    cleaned = _THINK_CLOSE_RE.sub("", cleaned)   # 兜底:清掉无配对的孤立 </think>
+    cleaned = cleaned.strip()
+    think_text = "\n".join(p.strip() for p in think_parts if p.strip())
+    return cleaned, think_text
 
 
 # ── 主类 ─────────────────────────────────────────────────────────────────────
@@ -138,6 +172,7 @@ class OpenAIModelCaller:
 
         msg = response.choices[0].message
         content = str(msg.content or "")
+        content, leaked_think = _split_think(content)   # 剥 <think>:防漏进答案 + 防污染多轮
 
         # 解析 tool_calls
         tool_calls: list[ToolCallReq] = []
@@ -153,6 +188,8 @@ class OpenAIModelCaller:
             )
 
         reasoning = _reasoning_text(msg)
+        if leaked_think:
+            reasoning = (reasoning + "\n" + leaked_think).strip() if reasoning else leaked_think
         usage_tokens = response.usage.total_tokens if response.usage else 0
 
         return ModelTurn(
