@@ -1,0 +1,2 @@
+# gh-aw 编译产物：标记为生成文件，合并冲突时保留本侧（官方推荐配置）
+.github/workflows/*.lock.yml linguist-generated=true
