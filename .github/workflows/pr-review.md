@@ -67,7 +67,9 @@ Non-blocking: 1. <同格式；不确定的问题写在这里并说明不确定�
 
 ### noop
 
-以下情况调用 noop 并附一句原因：PR 是 draft；diff 为空；PR 已关闭或已合并。
+以下情况调用 noop 并附一句原因：PR 是 draft；diff 为空；PR 已关闭或已合并；
+**PR 触及 `.github/workflows/` 下任何文件**（评审策略自身的修改面——策略改动必须由人类评审，
+本 workflow 不介入，防止"评审者评审对自己策略的修改"这一利益冲突）。
 
 ## Safe Outputs
 

@@ -22,3 +22,10 @@
 - N/A 显式登记（红线 5）：SP-12 自审代替（单人项目）；SP-14/15/17 无发布/部署面（仓内工具资产）；SP-08/09/10 无对应面。
 
 - CH-0002（2026-09-07）：sp-00 分诊（major 判定成立——治理载体全量替换）、SP-09 配置面受控变更、SP-11 分层验证、SP-19 收口均实际生效；audit 新增 R10（Ingest wiki 留痕存在性）首实战即 PASS（CH-0001 三处引用）。SP-04/05 tailoring 最小执行；N/A：SP-08/10/12/13/14/15/16/17/18/21 无对应面（显式登记）。/ingest 命令 + 新模板 Ingest 行随包 v1.1.0 落地，本条即首用。
+
+## [2026-09-07] review | feat/gh-aw-workflows 评审轮次 1——1 Blocking + 4 Non-blocking；指标 #4 首个实证
+
+- Blocking：secrets 运行前置未确认（lock 清单要求 ANTHROPIC_API_KEY 等）——未配置时合入即每个 PR/Issue 必现失败 run。处置：升格为合入门槛写入 AGENTS.md §5；人类动作 = 配置 Secrets + `gh aw compile` 重编 lock。
+- Non-blocking：①分支保护 × agent REQUEST_CHANGES 驳回权对齐（已写入 AGENTS.md §5）；②评审策略自修改面（已加 noop 守卫：触及 .github/workflows/ 转人工）；③注入面风险姿态（firewall 容器 + 只读 + safe-outputs 上限，接受并留档）；④synchronize 全量重审成本（观察项）。
+- 好设计点名：safe-outputs 结构性禁 APPROVE（正式批准留人类）；min-integrity 防火墙策略经查证真实生效（pr-review.lock.yml L888）。
+- 意义：独立 reviewer 发现了实现者未覆盖的运行前置——六指标之"reviewer 有独立价值"首个实证；发现数照实记账，零发现 PR 同样记账。
