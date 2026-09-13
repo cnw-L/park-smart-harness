@@ -47,3 +47,23 @@
 - 教训二：命令串含 `git push` 字面量会被权限沙箱拦截——门禁行为验证改走测试矩阵（58 passed），不模拟真实 push 串。
 - 教训三：个别证据行缺 `exit_code` 字段（行 37-45），R6/R8 不依赖故门禁无恙；未来 exit_code 预筛 hint（FAIL→PASS 检测）落地前须先修捕获字段完整性。
 - 详见 patterns/local-upgrade-path.md；判例见 decisions.md。
+
+## [2026-09-08] 发现 | pilot 远端既有仓与本地分叉——push v2 前提修正
+
+- 发现 origin = github.com/cnw-L/park-smart-harness（**公开仓**，API 匿名可查；最后推送 2026-08-07），推翻"pilot 无远端"认知。包仓 D:\software-spec-guide 确认无远端不变。
+- 分叉：共同祖先 0738587；远端独有 94dce92（设计文档 artifacts + 旧版 16 行 AGENTS.md）；本地独有 5 个治理提交（da1f75f..d2fa69e，含治理版 AGENTS.md，两侧冲突）。工作区现存同名 docx 为未跟踪文件——远端内容疑似被有意留在 git 外，处置待用户裁决（merge 保留 / 覆盖远端 / 暂不动）。
+- 同日：gh-aw 试点草案落分支 feat/gh-aw-workflows（de1e455，2 workflow + 2 lock.yml + .gitattributes，官方编译器 2 succeeded 0 warnings）；gh-aw 扩展已装。编译器会规范化 .gitattributes（去掉 merge=ours），该行归 gh-aw 管。
+
+## [2026-09-08] Change | 远端分叉合并 70e1843——push v2 pilot 半通
+
+- 机制：分离 worktree 完成 merge（主工作区 WIP/未跟踪文件不可直接 merge）；冲突仅 AGENTS.md（add/add）取治理版；update-ref 推进 main + reset --mixed 重建索引 + 仅对磁盘缺失的 144 个路径 checkout 物化（零覆盖，WIP 字节未动）。
+- 推前验证：513 passed / 24 skipped（24s，工作树=WIP 当前态，与 CH-0002 收口同数）。合并后工作区 15 个 M = 真实 WIP 增量（磁盘当前 vs 8 月快照），其中 assembler/context/loop 等不显示=在途改动与 8 月快照一致。
+- 推送遇网络重置/连接超时（github.com 间歇），后台重试循环已挂（main + feat/gh-aw-workflows 两 ref，fast-forward 无需 force）。
+- 遗留：合并后 .gitignore 磁盘为基线版、HEAD 为 8 月版（显示 M）——取舍留给用户；gh auth 仍缺（包仓/issue/PR 全阻塞）；ANTHROPIC_API_KEY secret 未配（workflow 激活前置）。
+- [收口] 后台重试推送成功：remote main=70e1843、feat/gh-aw-workflows=de1e455（独立 ls-remote 核验相符）。远端分叉解除，pilot 半 push v2 完成。
+
+## [2026-09-13] Note | wiki 骨架升级 7 文件两速制
+- /init 补齐稳定页 map.md/glossary.md（模板直拷，空表合法）；index.md 补 decisions.md 链接与读序
+- 触发：software-spec-guide v1.2.2 wiki_check W2 WARN（decisions 未登记）+ W5/W6 SKIP；范围：仅 wiki/；验证：wiki_check 改善复验；收口：本条即 Calibration（薄道）
+
+## [2026-09-13] Change | CH-0003 单边切换插件形态（v1.2.2）——双写消除 + 钩子权威兑现
