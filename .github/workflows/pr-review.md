@@ -2,7 +2,11 @@
 emoji: 🔍
 description: 独立 PR 审查（SP-12 薄道评审投影）——只依据 Issue + diff + 代码 + CI 事实，输出 APPROVE / REQUEST_CHANGES
 intent: 每个待审 PR 得到一份独立、逐条可核对的评审结论；正式批准始终留给人类
-engine: claude
+engine:
+  id: claude
+  env:
+    ANTHROPIC_BASE_URL: "https://open.bigmodel.cn/api/anthropic"
+    ANTHROPIC_MODEL: "glm-5.3-flash"
 on:
   pull_request:
     types: [opened, ready_for_review, synchronize, reopened]

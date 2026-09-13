@@ -2,7 +2,11 @@
 emoji: 🧭
 description: 新 Issue 分诊（sp-00 第零步投影）——三问判定薄道/全链，评论建议不代裁决
 intent: 每个新开的工程 Issue 收到一条可核对的分诊建议；路线选择可由人随时改判
-engine: claude
+engine:
+  id: claude
+  env:
+    ANTHROPIC_BASE_URL: "https://open.bigmodel.cn/api/anthropic"
+    ANTHROPIC_MODEL: "glm-5.3-flash"
 on:
   issues:
     types: [opened]
