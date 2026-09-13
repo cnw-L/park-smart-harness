@@ -65,3 +65,5 @@
 ## [2026-09-13] Note | wiki 骨架升级 7 文件两速制
 - /init 补齐稳定页 map.md/glossary.md（模板直拷，空表合法）；index.md 补 decisions.md 链接与读序
 - 触发：software-spec-guide v1.2.2 wiki_check W2 WARN（decisions 未登记）+ W5/W6 SKIP；范围：仅 wiki/；验证：wiki_check 改善复验；收口：本条即 Calibration（薄道）
+
+## [2026-09-13] Change | CH-0003 单边切换插件形态（v1.2.2）——双写消除 + 钩子权威兑现
