@@ -2,6 +2,10 @@
 emoji: 🔍
 description: 独立 PR 审查（SP-12 薄道评审投影）——只依据 Issue + diff + 代码 + CI 事实，输出 APPROVE / REQUEST_CHANGES
 intent: 每个待审 PR 得到一份独立、逐条可核对的评审结论；正式批准始终留给人类
+# 引擎说明：id=claude 是 Claude Code 运行时的固定协议名；实际模型供应商是
+# 智谱 GLM（经 Anthropic 兼容端点接入）。下方 ANTHROPIC_* 均为协议保留变量名，
+# 值指向智谱——换供应商只改这里的值，不改变量名。Secret ANTHROPIC_API_KEY
+# 的值 = 智谱 API Key（同名属协议保留，非 Anthropic 官方服务）。
 engine:
   id: claude
   env:
