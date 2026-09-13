@@ -10,4 +10,4 @@
 from .composition import ToolSubsystem, build_tool_subsystem
 from .runtime import ParkToolRuntime, build_park_runtime
 
-__all__ = ["build_park_runtime", "ParkToolRuntime", "build_tool_subsystem", "ToolSubsystem"]
+__all__ = ["ParkToolRuntime", "ToolSubsystem", "build_park_runtime", "build_tool_subsystem"]

@@ -1,6 +1,9 @@
 from __future__ import annotations
+
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
 from .budget import BudgetTracker
 
 if TYPE_CHECKING:
@@ -22,7 +25,7 @@ class OutputBudget:
 class ToolContext:
     budget: BudgetTracker
     depth: int
-    run_control: "RunControl | None" = None  # 父循环的中断信号;子 agent 共享此信号实现级联中断
+    run_control: RunControl | None = None  # 父循环的中断信号;子 agent 共享此信号实现级联中断
     principal: object | None = None           # 身份脊柱(engine-opaque):知识层透传权限、闸 deny 读
     thread_id: str = ""                        # 会话(用户)id:控制提案按此切片防跨用户串提案;子继承父会话
 

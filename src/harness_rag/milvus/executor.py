@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 from threading import Semaphore
-from typing import Any, Callable, TypeVar
-
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 

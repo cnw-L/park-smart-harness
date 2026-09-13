@@ -7,16 +7,20 @@ from __future__ import annotations
 
 import asyncio
 
-from agent_loop.llm import ModelTurn
-from agent_loop.messages import Message, ToolCallReq
-
 from agent_context.compactor import (
-    frame_summary, build_summary_prompt, FakeSummarizer, ModelBackedSummarizer,
+    FakeSummarizer,
+    ModelBackedSummarizer,
+    build_summary_prompt,
+    frame_summary,
 )
 from agent_context.history import (
-    Compaction, _COMPACTION, derive_compaction, select_compaction_span, apply_compaction_view,
+    _COMPACTION,
+    apply_compaction_view,
+    derive_compaction,
+    select_compaction_span,
 )
-
+from agent_loop.llm import ModelTurn
+from agent_loop.messages import Message, ToolCallReq
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

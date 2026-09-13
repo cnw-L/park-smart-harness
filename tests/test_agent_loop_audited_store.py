@@ -15,12 +15,9 @@ from __future__ import annotations
 import asyncio
 import logging
 
-import pytest
-
 from agent_loop.audited_store import AuditedConversationStore
 from agent_loop.conversation import Boundary, InMemoryConversationStore
 from agent_loop.messages import Message
-
 
 # ---------------------------------------------------------------------------
 # FakeAudit
@@ -194,14 +191,13 @@ def test_drop_in_run_loop_records_audit_boundaries():
 
     用 FakeModelCaller(echo)验证:循环正常完成,FakeAudit 至少记录了一条迭代边界。
     """
-    from agent_loop.loop import run_loop
-    from agent_loop.config import LoopConfig, LoopBudget
-    from agent_loop.conversation import Conversation
-    from agent_loop.tools import LoopToolRegistry
     from agent_loop.budget import BudgetTracker
-    from agent_loop.llm import ModelTurn, FakeModelCaller
-    from agent_loop.stubs import echo_tool
+    from agent_loop.config import LoopBudget, LoopConfig
+    from agent_loop.llm import ModelTurn
+    from agent_loop.loop import run_loop
     from agent_loop.messages import ToolCallReq
+    from agent_loop.stubs import echo_tool
+    from agent_loop.tools import LoopToolRegistry
 
     # FakeModelCaller:第一轮返回 echo 工具调用;第二轮返回 "done"(completed)
     seq_counter = {"n": 0}
@@ -256,7 +252,6 @@ def test_drop_in_run_loop_records_audit_boundaries():
 
     # FakeAudit 至少记录了一条迭代边界
     assert len(audit.calls) >= 1
-    statuses = {b.status for _, b in audit.calls}
     # 跳过 seq=0 的 user 边界;只看引擎产生的边界
     engine_calls = [(tid, b) for tid, b in audit.calls if b.status != "user"]
     assert len(engine_calls) >= 1

@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 
 from agent_loop.messages import ToolCallReq
-
 from agent_tools.execute_proposal import make_execute_proposal_tool
 from agent_tools.proposal import ControlProposal, ProposalStore
 from agent_tools.proposal_control import ProposalControlCapability

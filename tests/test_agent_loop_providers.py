@@ -4,18 +4,17 @@
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import types
-import asyncio
 
 import pytest
 
-from agent_loop.providers import OpenAIModelCaller, _split_think
+from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.llm import ModelTurn
 from agent_loop.messages import Message, ToolCallReq
-from agent_loop.config import LoopConfig, LoopBudget
-
+from agent_loop.providers import OpenAIModelCaller, _split_think
 
 # ── Fake client helpers ────────────────────────────────────────────────────────
 

@@ -3,12 +3,11 @@ from __future__ import annotations
 
 import asyncio
 
+from agent_context.knowledge import make_knowledge_search_tool, wrap_knowledge
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
 from agent_loop.tools import ToolContext
-
-from agent_context.knowledge import make_knowledge_search_tool, wrap_knowledge
-from agent_context.principal import Principal
 
 
 def _ctx(principal=None) -> ToolContext:

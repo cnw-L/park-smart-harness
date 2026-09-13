@@ -4,8 +4,8 @@
 契约来自模块自述（char-based 粗估、单调、大致缩放、不为 0）与调用方事实。
 不引入真 tokenizer。
 """
-from agent_loop.messages import Message, ToolCallReq
 from agent_context.tokens import estimate_tokens
+from agent_loop.messages import Message, ToolCallReq
 
 
 def test_empty_messages_returns_positive_floor():

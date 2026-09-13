@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import asyncio
 
+from agent_context.assembler import ParkContextAssembler
+from agent_context.knowledge import make_knowledge_search_tool
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.conversation import Conversation, InMemoryConversationStore
@@ -18,10 +21,6 @@ from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.plan import make_plan_tool
 from agent_loop.tools import LoopTool, LoopToolRegistry, ToolResult
-
-from agent_context.assembler import ParkContextAssembler
-from agent_context.knowledge import make_knowledge_search_tool
-from agent_context.principal import Principal
 
 
 class _CapturingCaller:

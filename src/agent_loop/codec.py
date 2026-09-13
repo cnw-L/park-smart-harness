@@ -5,10 +5,9 @@
 """
 from __future__ import annotations
 
-from .messages import Message, ToolCallReq
 from .conversation import Boundary
+from .messages import Message, ToolCallReq
 from .pending import PendingAction
-
 
 # ---------------------------------------------------------------------------
 # ToolCallReq

@@ -14,16 +14,14 @@ import os
 
 import pytest
 
+from agent_context.assembler import ParkContextAssembler
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.conversation import Boundary, InMemoryConversationStore
 from agent_loop.loop import run_loop
 from agent_loop.messages import Message
 from agent_loop.providers import OpenAIModelCaller
-
-from agent_context.assembler import ParkContextAssembler
-from agent_context.principal import Principal
-
 from agent_tools.composition import build_tool_subsystem
 
 pytestmark = pytest.mark.skipif(

@@ -22,7 +22,6 @@ from agent_loop.control import FakeControlCapability
 from agent_loop.conversation import (
     Boundary,
     Conversation,
-    ConversationStore,
     InMemoryConversationStore,
 )
 from agent_loop.llm import FakeModelCaller, ModelTurn
@@ -30,7 +29,6 @@ from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.stubs import echo_tool
 from agent_loop.tools import LoopTool, LoopToolRegistry, ToolResult
-
 
 # ─── 辅助工厂 ────────────────────────────────────────────────────────────────
 

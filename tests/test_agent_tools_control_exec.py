@@ -12,10 +12,9 @@ import httpx
 import pytest
 
 from agent_loop.messages import ToolCallReq
-
 from agent_tools.backend import BackendError, DeviceHit, FakeBackendClient, ProdApiBackendClient
 from agent_tools.proposal import ControlProposal, ProposalStore
-from agent_tools.proposal_control import ProposalControlCapability, _INVALID
+from agent_tools.proposal_control import _INVALID, ProposalControlCapability
 
 
 def _seed(store: ProposalStore, *, reversibility="可逆", token="utok",

@@ -10,12 +10,10 @@
 """
 from __future__ import annotations
 
+from agent_context.history import drop_answered_tool_results, trim_dialogue_turns
+from agent_context.tokens import estimate_tokens
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.repair import repair_messages
-
-from agent_context.tokens import estimate_tokens
-from agent_context.history import drop_answered_tool_results, trim_dialogue_turns
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from agent_loop.llm import FakeModelCaller
-
 from agent_tools.composition import TOP_TOOLS, build_tool_subsystem
 from agent_tools.loader import select_toolset
 

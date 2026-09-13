@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field, field_validator
 from .config import RagConfig as AssistantConfig
 from .evidence import EvidenceItem, RetrievalDiagnostics
 
-
 CollectionName = Literal["knowledge_chunks"]
 PassStage = Literal["first_pass", "repair_pass"]
 RankerName = Literal["rrf", "weighted"]

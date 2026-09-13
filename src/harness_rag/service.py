@@ -17,7 +17,13 @@ from .evidence import (
     merge_primary_and_supplemental,
     render_evidence_for_prompt,
 )
-from .policy import QueryRewritePlan, RetrievalPolicy, build_initial_policy, build_repair_policy, should_repair
+from .policy import (
+    QueryRewritePlan,
+    RetrievalPolicy,
+    build_initial_policy,
+    build_repair_policy,
+    should_repair,
+)
 from .rerank import Reranker, rerank_or_keep
 
 

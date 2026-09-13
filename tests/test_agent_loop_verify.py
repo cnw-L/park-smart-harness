@@ -9,19 +9,17 @@
 from __future__ import annotations
 
 import asyncio
-import pytest
 
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.conversation import Conversation, InMemoryConversationStore
 from agent_loop.dispatch import ToolExecOutcome
-from agent_loop.loop import run_loop
 from agent_loop.llm import FakeModelCaller, ModelTurn
+from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.stubs import echo_tool
 from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult
-from agent_loop.verify import NullVerifier, VerifyVerdict, Verifier
-
+from agent_loop.verify import NullVerifier, VerifyVerdict
 
 # ─── 共用辅助 ────────────────────────────────────────────────────────────────
 
@@ -303,10 +301,10 @@ def test_infra_failed_does_not_invoke_verifier():
 # ── ControlVerifier:控制"已受理≠已生效"标 verify-failed(替 NullVerifier 桩)──────
 
 def test_control_verifier_flags_accepted_but_not_effective():
-    from agent_loop.verify import ControlVerifier
     from agent_loop.dispatch import ToolExecOutcome
     from agent_loop.messages import Message, ToolCallReq
     from agent_loop.tools import LoopTool
+    from agent_loop.verify import ControlVerifier
 
     def _oc(content):
         return ToolExecOutcome(disposition="executed", ok=True, pending=None,

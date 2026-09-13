@@ -1,8 +1,10 @@
 import asyncio
-from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, OutputBudget
-from agent_loop.stubs import echo_tool, add_tool
+
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
+from agent_loop.stubs import add_tool, echo_tool
+from agent_loop.tools import LoopToolRegistry, OutputBudget, ToolContext
+
 
 def _ctx():
     return ToolContext(budget=BudgetTracker(LoopBudget(max_iterations=9)), depth=0)

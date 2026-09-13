@@ -19,18 +19,18 @@ def test_this_month():
 
 
 def test_last_n_days():
-    b, e, label = parse_time_window("最近7天的告警", now=_NOW)
+    b, _e, label = parse_time_window("最近7天的告警", now=_NOW)
     assert b == "2026-06-15 14:30:00" and label == "最近7天"
 
 
 def test_recent_week_keyword():
-    b, e, label = parse_time_window("最近一周新增多少工单", now=_NOW)
+    b, _e, label = parse_time_window("最近一周新增多少工单", now=_NOW)
     assert b == "2026-06-15 14:30:00" and label == "最近一周"
 
 
 def test_recent_month_before_this_month():
     # "最近一个月" 不应被 "本月" 误命中
-    b, e, label = parse_time_window("最近一个月", now=_NOW)
+    b, _e, label = parse_time_window("最近一个月", now=_NOW)
     assert label == "最近一个月" and b == "2026-05-23 14:30:00"
 
 

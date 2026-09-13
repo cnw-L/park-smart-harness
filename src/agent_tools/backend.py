@@ -16,9 +16,9 @@ from __future__ import annotations
 
 import os
 import re
-from urllib.parse import quote
 from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
+from urllib.parse import quote
 
 import httpx
 
@@ -378,7 +378,7 @@ class ProdApiBackendClient:
         self._system_by_type = {**_DEFAULT_SYSTEM_BY_TYPE, **(system_by_type or {})}
 
     @classmethod
-    def from_env(cls) -> "ProdApiBackendClient":
+    def from_env(cls) -> ProdApiBackendClient:
         base = os.getenv("ASSISTANT_PROJECT_API_BASE_URL")
         if not base:
             raise BackendError("ASSISTANT_PROJECT_API_BASE_URL 未配置", code="not_configured")
@@ -682,7 +682,7 @@ class ProdApiBackendClient:
         return {"Authorization": _bearer(tok)} if tok else {}
 
     @staticmethod
-    def _parse(resp: "httpx.Response") -> Any:
+    def _parse(resp: httpx.Response) -> Any:
         if resp.status_code != 200:
             raise BackendError(f"prod-api HTTP {resp.status_code}", code="http_error")
         try:
