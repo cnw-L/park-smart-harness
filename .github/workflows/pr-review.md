@@ -2,15 +2,20 @@
 emoji: 🔍
 description: 独立 PR 审查（SP-12 薄道评审投影）——只依据 Issue + diff + 代码 + CI 事实，输出 APPROVE / REQUEST_CHANGES
 intent: 每个待审 PR 得到一份独立、逐条可核对的评审结论；正式批准始终留给人类
-# 引擎说明：id=claude 是 Claude Code 运行时的固定协议名；实际模型供应商是
-# 智谱 GLM（经 Anthropic 兼容端点接入）。下方 ANTHROPIC_* 均为协议保留变量名，
-# 值指向智谱——换供应商只改这里的值，不改变量名。Secret ANTHROPIC_API_KEY
-# 的值 = 智谱 API Key（同名属协议保留，非 Anthropic 官方服务）。
+# 引擎接线说明：id=claude 是 Claude Code 运行时的协议名；模型供应商是智谱 GLM
+# （Anthropic 兼容端点）。Secret ANTHROPIC_API_KEY 的值 = 智谱 API Key——此命名
+# 是 gh-aw 沙箱的强制约定（认证经代理注入、不进 agent 容器；通用名 secrets 会被
+# 沙箱排除），不可改名。换供应商：改 Secret 值 + BASE_URL + model + network 域名。
 engine:
   id: claude
   env:
     ANTHROPIC_BASE_URL: "https://open.bigmodel.cn/api/anthropic"
-    ANTHROPIC_MODEL: "glm-5.3-flash"
+model: glm-5.3-flash
+strict: true
+network:
+  allowed:
+    - defaults
+    - open.bigmodel.cn
 on:
   pull_request:
     types: [opened, ready_for_review, synchronize, reopened]
