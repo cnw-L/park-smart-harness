@@ -1,8 +1,7 @@
 """V5:登录链接缝 —— PermissionMapper(直通/映射)+ OrgPolicy + resolve_capabilities。"""
 from __future__ import annotations
 
-from agent_tools.identity import (IdentityMapper, OrgPolicy, TableMapper,
-                                  resolve_capabilities)
+from agent_tools.identity import IdentityMapper, OrgPolicy, TableMapper, resolve_capabilities
 
 
 def test_identity_mapper_passthrough():

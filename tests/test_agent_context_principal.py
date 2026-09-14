@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.conversation import Conversation, InMemoryConversationStore
@@ -14,8 +15,6 @@ from agent_loop.llm import FakeModelCaller, ModelTurn
 from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult
-
-from agent_context.principal import Principal
 
 
 def _cfg(toolset: list[str]) -> LoopConfig:

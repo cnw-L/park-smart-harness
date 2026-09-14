@@ -8,15 +8,13 @@ from __future__ import annotations
 
 import asyncio
 
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.conversation import Boundary, InMemoryConversationStore
 from agent_loop.llm import ModelTurn
 from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
-
-from agent_context.principal import Principal
-
 from agent_tools.composition import build_tool_subsystem
 
 # 子 loop 现受同一 CatalogGate(deny-first)→ 会话需带能力码 principal(身份脊柱透传给子)。

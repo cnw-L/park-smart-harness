@@ -8,14 +8,14 @@ from agent_loop.config import LoopBudget
 from agent_loop.llm import ModelTurn
 from agent_loop.messages import ToolCallReq
 from agent_loop.tools import ToolContext
-
 from agent_tools.backend import BackendError, FakeBackendClient
 from agent_tools.catalog import ToolCatalog
-from agent_tools.domains.facility import (FACILITY_LEAVES, build_facility_agent,
-                                          facility_leaf_specs)
-from agent_tools.domains.knowledge import make_knowledge_query_tool
-from agent_tools.domains.life import (make_meeting_query_tool, make_parking_query_tool,
-                                      make_restaurant_query_tool)
+from agent_tools.domains.facility import FACILITY_LEAVES, build_facility_agent, facility_leaf_specs
+from agent_tools.domains.life import (
+    make_meeting_query_tool,
+    make_parking_query_tool,
+    make_restaurant_query_tool,
+)
 from agent_tools.domains.records import make_record_query_tool
 from agent_tools.proposal import ProposalStore
 

@@ -14,10 +14,9 @@ v1 职责：
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Protocol
-
 
 # ── 身份小节（v1 已存在，保留兼容）──────────────────────────────────────────
 
@@ -67,12 +66,12 @@ class MemoryEntry:
     def is_expired(self, now: datetime | None = None) -> bool:
         if self.expires_at is None:
             return False
-        now = now or datetime.now(timezone.utc)
+        now = now or datetime.now(UTC)
         exp = self.expires_at
         if exp.tzinfo is None:            # naive(如 PG 未带 tz)-> 视作 UTC,避免与 aware 比较抛 TypeError
-            exp = exp.replace(tzinfo=timezone.utc)
+            exp = exp.replace(tzinfo=UTC)
         if now.tzinfo is None:
-            now = now.replace(tzinfo=timezone.utc)
+            now = now.replace(tzinfo=UTC)
         return exp < now
 
 
@@ -162,7 +161,7 @@ class MemoryEngine:
             kinds=kinds,
         )
         # 本地过滤：过期/已删；按创建时间降序（最新优先）
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         active = [r for r in results if r.deleted_at is None and not r.is_expired(now)]
         if current_thread_id:                     # 不召回本会话刚写入的(避免回声/自指)
             active = [r for r in active if r.source_thread_id != current_thread_id]
@@ -196,7 +195,7 @@ def render_memory(entries: list[MemoryEntry], *, max_chars: int = 800) -> str:
     used = 0
     for e in entries:
         tag = f"[{e.kind}]"
-        line = f"{tag} {_FENCE_TAG_RE.sub("", e.content)}"
+        line = f"{tag} {_FENCE_TAG_RE.sub('', e.content)}"
         if used + len(line) + 1 > max_chars:
             break
         lines.append(line)
@@ -347,7 +346,7 @@ class InMemoryMemoryStore:
         max_age_days: int | None = None,
     ) -> list[MemoryEntry]:
         results: list[MemoryEntry] = []
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for e in self._entries.values():
             if e.tenant_id != tenant_id or e.user_id != user_id:
                 continue

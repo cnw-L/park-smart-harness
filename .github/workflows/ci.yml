@@ -21,7 +21,10 @@ jobs:
       - name: Install
         run: python -m pip install -e ".[dev]"
       - name: Test
+      - name: Test
         run: python -m pytest tests/ -q
+      - name: Lint
+        run: python -m ruff check src/ tests/
 
-# Phase 1 只设测试门禁。ruff 已配置但历史上未执行（存量 ~827 处），
-# "lint 治理"作为闭环的首批候选 issue，通过后再加回 Lint 步骤。
+# ruff 曾长期"配而不跑"（存量经治理于 2026-09 清零，配置侧豁免项及理由见 pyproject
+# [tool.ruff.lint] ignore 注释）；此步骤为常驻回归门禁，二期治理项另立 issue。

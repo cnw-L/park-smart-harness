@@ -1,9 +1,11 @@
 import asyncio
-from agent_loop.plan import PlanState, make_plan_tool, derive_plan
-from agent_loop.tools import ToolContext
+
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
 from agent_loop.messages import Message, ToolCallReq
+from agent_loop.plan import PlanState, derive_plan, make_plan_tool
+from agent_loop.tools import ToolContext
+
 
 def test_plan_tool_replaces_snapshot():
     state = PlanState()

@@ -178,7 +178,7 @@ def test_pg_control_approve_executes_and_increments_count():
             await _cleanup_idem(store, pending.idem_key)
             await store.aclose()
 
-    result, count, idem_key = run(_run())
+    result, count, _idem_key = run(_run())
     assert result.ok
     assert "[executed]" in result.content
     assert "readback=ok" in result.content

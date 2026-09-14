@@ -11,18 +11,17 @@
 - H2: uuid thread_id 不碰撞
 """
 import asyncio
+
 import pytest
 
-from agent_loop.subagent import make_subagent_tool
-from agent_loop.config import LoopConfig, LoopBudget
-from agent_loop.conversation import InMemoryConversationStore
-from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult
 from agent_loop.budget import BudgetTracker
+from agent_loop.config import LoopBudget, LoopConfig
+from agent_loop.llm import FakeModelCaller, ModelTurn
+from agent_loop.messages import ToolCallReq
 from agent_loop.runcontrol import RunControl
 from agent_loop.stubs import echo_tool
-from agent_loop.llm import ModelTurn, FakeModelCaller
-from agent_loop.messages import ToolCallReq
-
+from agent_loop.subagent import make_subagent_tool
+from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult
 
 # ─── 辅助 ────────────────────────────────────────────────────────────────────
 
@@ -227,7 +226,6 @@ def test_uuid_thread_id_no_collision():
     """H2:多次调用同一 subagent handler 产生的 sub_conv.thread_id 应各不相同。
     通过 monkeypatch 捕获实际 Conversation 构造参数来验证唯一性。
     """
-    import agent_loop.subagent as _subagent_mod
     from agent_loop import conversation as _conv_mod
 
     thread_ids: list[str] = []

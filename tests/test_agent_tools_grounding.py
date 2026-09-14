@@ -6,11 +6,10 @@ import asyncio
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
 from agent_loop.tools import ToolContext
-
 from agent_tools.backend import BackendError, DeviceHit, FakeBackendClient
 from agent_tools.grounding import Grounded, Intent, Rejection, ground_control
-from agent_tools.propose import make_propose_control_tool
 from agent_tools.proposal import ProposalStore
+from agent_tools.propose import make_propose_control_tool
 
 
 def _be():
@@ -198,8 +197,8 @@ def test_propose_by_name_not_found_asks_for_name():
 
 def test_door_param_detection_and_payload():
     """门禁通道控制判据 + doorControl payload(数组+currentParamValue+status+isAble,无 paramType)。"""
-    from agent_tools.grounding import Grounded, _is_door_param
     from agent_tools.backend import ParamType
+    from agent_tools.grounding import Grounded, _is_door_param
     assert _is_door_param(ParamType(param_type_no="channelControl", param_type_name="通道控制"))
     assert not _is_door_param(ParamType(param_type_no="temControl", param_type_name="温度控制"))
     g = Grounded(device_id="30302", point_id="p", point_type_id="3700", point_type_no="MJ",

@@ -6,21 +6,18 @@
 from __future__ import annotations
 
 import asyncio
-import pytest
 
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.control import FakeControlCapability
 from agent_loop.conversation import Conversation, InMemoryConversationStore
-from agent_loop.dispatch import ToolExecOutcome
 from agent_loop.gate import DefaultGate
-from agent_loop.loop import run_loop
 from agent_loop.llm import FakeModelCaller, ModelTurn
+from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.stubs import echo_tool
 from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult
 from agent_loop.verify import VerifyVerdict
-
 
 # ─── 共用辅助 ────────────────────────────────────────────────────────────────
 

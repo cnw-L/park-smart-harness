@@ -8,18 +8,13 @@
 """
 from __future__ import annotations
 
-import os
-
-import pytest
-
 from agent_loop.pg_store import (
+    _DEFAULT_DSN,
     PgControlCapability,
     PgIdempotencyLedger,
     PgStore,
-    _DEFAULT_DSN,
     _resolve_dsn,
 )
-
 
 # ---------------------------------------------------------------------------
 # _resolve_dsn 函数
