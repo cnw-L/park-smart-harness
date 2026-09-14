@@ -22,7 +22,6 @@ from agent_loop.messages import Message, ToolCallReq
 from agent_loop.stubs import echo_tool
 from agent_loop.tools import LoopTool, LoopToolRegistry, ToolResult
 
-
 # ─── 共用辅助 ────────────────────────────────────────────────────────────────
 
 def _cfg(max_iter: int = 10) -> LoopConfig:

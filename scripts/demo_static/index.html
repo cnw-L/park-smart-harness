@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智慧园区 · 内圈引擎 Demo</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="header">
+  <div class="dot"></div>
+  <div style="flex:1;">
+    <h1>智慧园区 · 治理工具子系统 Demo</h1>
+    <p>真 qwen@6008 · 设备管理 / 运行查询 / 生活服务 / 知识检索 / 执行工具(控制·需确认) · deny-first 按身份过滤</p>
+  </div>
+  <div class="identity-switch" id="identitySwitch"></div>
+</div>
+
+<div class="main">
+  <div class="chat-area">
+    <div class="messages scrollable" id="messages">
+      <div class="empty-state" id="emptyState">
+        <h2>欢迎</h2>
+        <p>选个示例或直接发消息。设备控制(执行工具)会触发人工确认红线;右上角可切换身份,看可见工具随权限收缩。</p>
+      </div>
+    </div>
+
+    <div class="examples">
+      <span class="chip" onclick="sendChip('查一下南区2号楼空调机组的运行状态和健康度')">设备管理·查空调状态+健康度</span>
+      <span class="chip" onclick="sendChip('南区2号楼今天的工单和告警帮我理一下')">运行查询·工单+告警</span>
+      <span class="chip" onclick="sendChip('南区2号楼消防应急预案是怎么规定的?')">知识检索·消防应急预案</span>
+      <span class="chip" onclick="sendChip('南区2号楼附近有什么餐厅?')">生活服务·餐厅</span>
+      <span class="chip" onclick="sendChip('把南区2号楼空调机组的温度调到24度')">执行工具·调温(需确认)</span>
+      <span class="chip" onclick="sendChip('制定并执行三步计划:先查南区2号楼空调温度,偏高就提案调到24度(需确认),最后汇总;请先用 plan 工具列出这三步再逐步执行')">三步计划(查→提案→汇总)</span>
+    </div>
+
+    <div class="input-bar">
+      <textarea id="input" placeholder="输入消息,Enter 发送,Shift+Enter 换行..." rows="1"></textarea>
+      <button class="btn-send" id="sendBtn" onclick="sendMessage()">发送</button>
+      <button class="btn-reset" onclick="resetSession()">重置</button>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-title">当前计划</div>
+    <div class="plan-items" id="planItems">
+      <div class="plan-empty" id="planEmpty">暂无</div>
+    </div>
+    <div class="sidebar-title" style="border-top:1px solid var(--border);">当前身份 · 可见工具</div>
+    <div class="tools-panel" id="toolsPanel">
+      <div class="plan-empty">加载中…</div>
+    </div>
+    <div class="sidebar-title" style="border-top:1px solid var(--border);">数据令牌(传后端)</div>
+    <div class="token-box">
+      <input id="tokenInput" type="password" placeholder="粘贴 Bearer token…" autocomplete="off" />
+      <button id="tokenBtn" onclick="applyToken()">应用</button>
+      <div class="token-status" id="tokenStatus">未设置 · 用默认</div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

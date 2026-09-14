@@ -31,3 +31,11 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+
+# 第三方克隆仓库(带自己的 .git,不属于本仓库)
+digital-human/开源项目/
+harness-park-design/reference/hermes-agent/
+
+# 构建临时目录
+.tmp-docx/
+node_modules/

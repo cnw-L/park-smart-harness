@@ -61,7 +61,7 @@ class ParkToolRuntime:
             raw = ()                                    # 身份不可信 → 空能力集(最小权限)
         caps = resolve_capabilities(raw, role_key, mapper=self.mapper, org_policy=self.org_policy)
         return Principal(id=username, name=name or username, role=role_key, dept=dept,
-                         koujing=koujing, token=token, permissions=caps)
+                         koujing=koujing, park_id=park_id, token=token, permissions=caps)
 
     def toolset_for(self, principal: Principal) -> list[str]:
         """ToolLoader:按 principal 有效能力集过滤顶层 toolset(可见性 = 减选择 + 第一道安全)。"""

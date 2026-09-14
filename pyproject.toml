@@ -29,6 +29,7 @@ dev = [
   "pytest>=8.0.0",
   "pytest-timeout>=2.3.0",
   "pytest-asyncio>=1.0",
+  "pytest-cov>=6.0",
   "ruff>=0.15.0",
 ]
 
@@ -48,7 +49,10 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "RUF"]
-ignore = ["E402", "E501", "RUF001"]
+# 中文注释/文档串的全角标点是本库特性（RUF002/003 误报，RUF001 已于早期忽略）；
+# E701/702 测试内 `;` 紧凑断言为既定风格；RUF005/015 微优化风格留待二期统一；
+# UP042 暂缓——(str, Enum)→StrEnum 会改变 str() 输出语义，属行为变更不混入门禁 PR。
+ignore = ["E402", "E501", "RUF001", "RUF002", "RUF003", "E701", "E702", "RUF005", "RUF015", "UP042"]
 fixable = ["ALL"]
 
 [tool.ruff.format]

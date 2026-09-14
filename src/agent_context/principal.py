@@ -20,5 +20,6 @@ class Principal:
     role: str                 # 员工 / 市民
     dept: str = ""
     koujing: str = ""         # 口径标签(如"内部,可列技术细节")
+    park_id: str | int | None = None  # 园区隔离:检索/数据级过滤用;None=不隔离(随 token 走后端)
     token: str | None = None  # 透传后端做权限过滤的原始身份;None=匿名→后端默认查(须最小权限)
     permissions: tuple[str, ...] = ()  # 工具可见性/deny 闸用的权限码;会话开始从后端 /user/info 灌一次

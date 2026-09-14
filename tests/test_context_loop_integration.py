@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import asyncio
 
+from agent_context.assembler import ParkContextAssembler
+from agent_context.knowledge import make_knowledge_search_tool
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.conversation import Conversation, InMemoryConversationStore
@@ -18,10 +21,6 @@ from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.plan import make_plan_tool
 from agent_loop.tools import LoopTool, LoopToolRegistry, ToolResult
-
-from agent_context.assembler import ParkContextAssembler
-from agent_context.knowledge import make_knowledge_search_tool
-from agent_context.principal import Principal
 
 
 class _CapturingCaller:
@@ -112,7 +111,7 @@ def test_rings_combined_multistep_context_shaping():
     assert any("tok-1" in (m.content or "") for m in ctx2)        # 身份透传穿过整循环到检索器
 
 
-def test_rings_combined_pending_placeholder_preserved_in_assembled_context():
+async def test_rings_combined_pending_placeholder_preserved_in_assembled_context():
     """组合系统下,挂起占位 [pending_confirmation] 落在历史里,assembler 不丢(恢复锚点)。"""
     conv = Conversation(thread_id="susp")
     conv.principal = Principal(id="u", name="李工", role="员工", token="t")
@@ -122,6 +121,6 @@ def test_rings_combined_pending_placeholder_preserved_in_assembled_context():
         ToolCallReq(id="c1", name="device_ctrl", arguments={"device": "3号楼空调", "value": 24})]))
     conv.append(Message(role="tool", tool_call_id="c1", name="device_ctrl", content="[pending_confirmation]"))
 
-    out = ParkContextAssembler().assemble(_cfg(), conv)
+    out = await ParkContextAssembler().assemble(_cfg(), conv)
     # 占位原样保留(不被丢弃/包装篡改)→ resume 时模型能据此续上
     assert any((m.content or "") == "[pending_confirmation]" for m in out)

@@ -6,11 +6,10 @@ from __future__ import annotations
 
 import asyncio
 
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
 from agent_loop.tools import ToolContext
-from agent_context.principal import Principal
-
 from agent_tools.domains.knowledge import make_knowledge_query_tool
 from agent_tools.retrieval import Evidence, FakeKnowledgeRetriever, KnowledgePermissionPolicy
 

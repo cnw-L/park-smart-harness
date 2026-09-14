@@ -18,6 +18,7 @@ import os
 import re
 from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
+from urllib.parse import quote
 
 import httpx
 
@@ -377,7 +378,7 @@ class ProdApiBackendClient:
         self._system_by_type = {**_DEFAULT_SYSTEM_BY_TYPE, **(system_by_type or {})}
 
     @classmethod
-    def from_env(cls) -> "ProdApiBackendClient":
+    def from_env(cls) -> ProdApiBackendClient:
         base = os.getenv("ASSISTANT_PROJECT_API_BASE_URL")
         if not base:
             raise BackendError("ASSISTANT_PROJECT_API_BASE_URL 未配置", code="not_configured")
@@ -668,7 +669,7 @@ class ProdApiBackendClient:
         # GET /user/info/{username}/{parkId} → **能力级**权限码(permissions+apiPermissions)。
         # ★devicePermission/dataScope 是**资源级**(看哪些设备/数据)→ 委托后端 token 过滤,**不喂 gate**
         #   (设计 §六:harness gate 只判能力级;混轴喂 gate 是 bug)。
-        data = await self._get(f"/user/info/{username}/{park_id}", token)
+        data = await self._get(f"/user/info/{quote(str(username), safe='')}/{quote(str(park_id), safe='')}", token)
         out: list[str] = []
         for key in ("permissions", "apiPermissions"):
             v = data.get(key)
@@ -681,7 +682,7 @@ class ProdApiBackendClient:
         return {"Authorization": _bearer(tok)} if tok else {}
 
     @staticmethod
-    def _parse(resp: "httpx.Response") -> Any:
+    def _parse(resp: httpx.Response) -> Any:
         if resp.status_code != 200:
             raise BackendError(f"prod-api HTTP {resp.status_code}", code="http_error")
         try:

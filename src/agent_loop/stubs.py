@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from .tools import LoopTool, ToolContext, ToolResult
+
 
 def device_ctrl_tool() -> LoopTool:
     async def handler(args: dict, ctx: ToolContext) -> ToolResult:

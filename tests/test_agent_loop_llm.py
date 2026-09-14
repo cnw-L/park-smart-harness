@@ -1,6 +1,8 @@
 import asyncio
-from agent_loop.llm import ModelTurn, FakeModelCaller
+
+from agent_loop.llm import FakeModelCaller, ModelTurn
 from agent_loop.messages import ToolCallReq
+
 
 def test_fake_model_caller_scripts_turns():
     turns = [

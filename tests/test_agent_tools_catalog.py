@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from agent_loop.llm import FakeModelCaller
 from agent_loop.tools import LoopTool
-
 from agent_tools.catalog import ToolCatalog, ToolSpec
 from agent_tools.composition import build_tool_subsystem
 

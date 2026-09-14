@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Protocol
+
 from .config import LoopConfig
 from .messages import Message, ToolCallReq
+
 
 @dataclass
 class ModelTurn:

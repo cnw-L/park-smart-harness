@@ -26,7 +26,6 @@ from agent_loop.messages import Message
 from agent_loop.pg_store import PgAuditLog, PgStore
 from agent_loop.redis_store import RedisConversationStore
 
-
 # ---------------------------------------------------------------------------
 # 辅助
 # ---------------------------------------------------------------------------

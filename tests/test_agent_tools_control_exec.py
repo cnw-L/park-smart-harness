@@ -12,10 +12,9 @@ import httpx
 import pytest
 
 from agent_loop.messages import ToolCallReq
-
 from agent_tools.backend import BackendError, DeviceHit, FakeBackendClient, ProdApiBackendClient
 from agent_tools.proposal import ControlProposal, ProposalStore
-from agent_tools.proposal_control import ProposalControlCapability, _INVALID
+from agent_tools.proposal_control import _INVALID, ProposalControlCapability
 
 
 def _seed(store: ProposalStore, *, reversibility="可逆", token="utok",
@@ -235,6 +234,20 @@ def test_execute_routes_doorcontrol_to_door_endpoint():
     res = asyncio.run(cap.resolve(cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h})), "approve"))
     assert backend.door_calls and backend.door_calls[0]["status"] == "开门"   # 走了 door
     assert backend.ctrl_calls == []                                          # 没误走 deviceCtrl
+    assert res.ok and "effective=unknown" in res.content                     # 门禁状态型:诚实标 unknown,不假读回
+
+
+def test_execute_readback_no_target_device_returns_unknown():
+    """读回列表无目标设备 -> effective=unknown(无设备读回),绝不用别台设备读数兜底。"""
+    store = ProposalStore()
+    backend = FakeBackendClient(device_hits=[DeviceHit(device_id="999", name="别台", status="在线", value="99")])
+    cap = ProposalControlCapability(store, backend=backend, execution_mode="real")
+    h = store.put(ControlProposal(target="x", action="deviceCtrl",
+        params={"deviceId": 1, "paramValue": "24", "paramTypeNo": "WD"}, reversibility="可逆", token="t"))
+    res = asyncio.run(cap.resolve(cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h})), "approve"))
+    assert res.ok                                                            # 已受理(下发与读回分离)
+    assert "无设备读回" in res.content                                         # 目标设备不在读回 -> unknown
+    assert "999" not in res.content                                          # 绝不拿别台设备(999)读数对账
 
 
 # ── Part3 控制幂等批A:确定性 idem + WAL + in_flight 消解 ──────────────────────
@@ -247,8 +260,14 @@ class _SpyLedger:
         self.events.append(("put", status))
         if k in self.rows: return False
         self.rows[k] = {"status": status, **result}; return True
-    async def update(self, k, status, result):
-        self.events.append(("update", status)); self.rows[k] = {"status": status, **result}
+    async def update(self, k, status, result, expected_status=None):
+        self.events.append(("update", status))
+        if expected_status is not None:                  # CAS:仅当当前状态==期望才改(镜像 PgIdempotencyLedger)
+            cur = self.rows.get(k)
+            if cur is None or cur.get("status") != expected_status:
+                return False                             # CAS 丢失(状态已变/不存在)-> 不更新
+        self.rows[k] = {"status": status, **result}
+        return True
 
 
 def test_idem_key_is_deterministic_per_proposal():
@@ -302,6 +321,48 @@ def test_wal_done_returns_cached_no_refire():
     led.rows[p.idem_key] = {"status": "done", "content": "[executed] cached"}
     res = asyncio.run(cap.resolve(p, "approve"))
     assert res.ok and "cached" in res.content and backend.ctrl_calls == []
+
+
+def test_failed_retry_cas_reclaim_executes_once():
+    """上次下发失败(status=failed)-> CAS 重置 in_flight 重新下发(可逆才允许),执行一次。"""
+    store = ProposalStore()
+    backend = FakeBackendClient(device_hits=[DeviceHit(device_id="1", name="x", status="在线",
+        value="24", readings=[("WD", "温度", "24")])])
+    led = _SpyLedger()
+    cap = ProposalControlCapability(store, backend=backend, execution_mode="real", ledger=led)
+    h = store.put(ControlProposal(target="x", action="deviceCtrl",
+        params={"deviceId": 1, "paramValue": "24", "paramTypeNo": "WD"}, reversibility="可逆", token="t"))
+    p = cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h}))
+    led.rows[p.idem_key] = {"status": "failed", "content": ""}      # 上次发失败
+    res = asyncio.run(cap.resolve(p, "approve"))
+    assert res.ok                                                    # CAS 重置后重新下发成功
+    assert ("update", "in_flight") in led.events                     # CAS(expected=failed) 重置 in_flight
+    assert ("update", "done") in led.events                          # 成功后写 done
+    assert len(backend.ctrl_calls) == 1                             # 只下发一次
+
+
+def test_concurrent_cas_loss_returns_cached_no_resend():
+    """CAS 丢失(并发已改状态)-> 复用并发结果、绝不重发(at-most-once)。"""
+    class _RacyLedger:                                              # 模拟:get 先见 failed,CAS 必失,re-get 见 done
+        def __init__(self): self.rows = {}; self.events = []; self._n = 0
+        async def get(self, k):
+            self._n += 1
+            return ({"status": "failed", "content": ""} if self._n == 1
+                    else {"status": "done", "content": "[executed] cached"})
+        async def put_if_absent(self, k, status, result):
+            self.events.append(("put", status)); self.rows[k] = {"status": status, **result}; return True
+        async def update(self, k, status, result, expected_status=None):
+            self.events.append(("update", status))
+            if expected_status is not None: return False            # CAS 丢失(并发已改状态)
+            self.rows[k] = {"status": status, **result}; return True
+    store = ProposalStore()
+    backend = FakeBackendClient(device_hits=[DeviceHit(device_id="1", name="x", status="在线", value="24")])
+    cap = ProposalControlCapability(store, backend=backend, execution_mode="real", ledger=_RacyLedger())
+    h = store.put(ControlProposal(target="x", action="deviceCtrl",
+        params={"deviceId": 1, "paramValue": "24", "paramTypeNo": "WD"}, reversibility="可逆", token="t"))
+    res = asyncio.run(cap.resolve(cap.freeze(ToolCallReq(id="e", name="execute_proposal", arguments={"handle": h})), "approve"))
+    assert res.ok and "cached" in res.content                       # 复用并发已完成的结果
+    assert backend.ctrl_calls == []                                 # CAS 丢失 -> 绝不重发
 
 
 def test_freeze_scopes_latest_to_thread_no_cross_user_leak():

@@ -1,7 +1,7 @@
 # AGENTS.md — park-smart-harness（智慧园区 agent harness）
 
 > 本仓库按《软件项目开发工程规范指南》（五篇，SEALED 2026-09）第五篇执行规程开发。
-> 技能源在 `.agents/skills/`（23 个技能：sp-00 场景路由 + 22 个 SP 规程，Agent Skills 开放标准；Claude Code 原生镜像在 `.claude/skills/`）：按需自动调取，不要通读。
+> 技能源：**software-spec-guide（用户级：宿主插件 v1.2.2 提供 hooks；技能副本经 installer 刷新至 v1.3.1）**——24 个技能（sp-00 场景路由 + wiki-operator + 22 个 SP，Agent Skills 开放标准）：按需自动调取，不要通读。仓库内 `fix/implement/issue/review` 四技能为本项目自有资产，仍在 `.claude/skills/` 与 `.agents/skills/`。
 > 角色不混淆：本仓库自身是一个 agent harness 产品（内圈控制循环 / 上下文组装 / 工具治理 / RAG）；开发它时，你是执行第五篇规程的工程 agent。
 
 ## 0. 项目速览
@@ -49,7 +49,7 @@
 
 ## 4. 证据层（evidence/）
 
-- 验证类命令（测试/构建/lint）的真实输出由 hooks 自动落盘到 `evidence/runs.jsonl`——这是 Evidence by Work 的载体，不可手改。捕获范围与规约详见 [evidence/README.md](evidence/README.md)。
+- 验证类命令（测试 / lint；构建类暂不在捕获集）的真实输出由 hooks（software-spec-guide 插件提供）自动落盘到 `evidence/runs.jsonl`——这是 Evidence by Work 的载体，不可手改。捕获范围与规约详见 [evidence/README.md](evidence/README.md)。
 - `git push` 前置门禁会检查是否存在晚于 HEAD 提交的验证记录（SP-11 纪律）；无记录时先跑验证。临时绕过：环境变量 `SPEC_GATE_DISABLE=1`（事后须补记原因到 log.md）。
 - 本仓库当前有未提交的工作区改动时，push 门禁只看时间先后（最小机械投影），改没改对、绿不绿仍由 SP-11/SP-12 的规程判断承担。
 

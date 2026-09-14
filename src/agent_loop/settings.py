@@ -10,8 +10,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .redis_store import RedisConversationStore
     from .providers import OpenAIModelCaller
+    from .redis_store import RedisConversationStore
 
 
 # ── 本地 90 默认值 ─────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ def load_infra_settings() -> InfraSettings:
 
 # ── 便利工厂(仅构造,不连接) ──────────────────────────────────────────────────
 
-def make_redis_store(settings: InfraSettings, *, key_prefix: str = "agentloop") -> "RedisConversationStore":
+def make_redis_store(settings: InfraSettings, *, key_prefix: str = "agentloop") -> RedisConversationStore:
     """根据 settings 构造 RedisConversationStore(不建连)。"""
     from .redis_store import RedisConversationStore
     return RedisConversationStore(
@@ -82,7 +82,7 @@ def make_redis_store(settings: InfraSettings, *, key_prefix: str = "agentloop") 
     )
 
 
-def make_model_caller(settings: InfraSettings) -> "OpenAIModelCaller":
+def make_model_caller(settings: InfraSettings) -> OpenAIModelCaller:
     """根据 settings 构造 OpenAIModelCaller(不建连)。"""
     from .providers import OpenAIModelCaller
     return OpenAIModelCaller(

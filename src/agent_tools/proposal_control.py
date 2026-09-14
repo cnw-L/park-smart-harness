@@ -97,21 +97,32 @@ class ProposalControlCapability:
                 return ToolResult(ok=True, content=(existing or {}).get("content", ""))
             if status == "in_flight":                   # 上次发到一半崩了 → 崩溃窗口消解(不盲目重发)
                 return await self._resolve_in_flight(idem, proposal)
+            if self._ledger_db is None and idem in self._ledger:  # 回退账本(无 WAL):已执行 -> 返缓存
+                self._store.pop(pending.handle)
+                return self._ledger[idem]
+            if proposal is None:                        # 提案在 freeze->resolve 间过期/已消解 -> 身份/可逆性全失,绝不盲发(也不写账本)
+                return ToolResult(ok=False, content="",
+                                  error=f"提案已过期或已消解(handle={pending.handle}),请重新发起控制")
             # ★门栓 F3(纵深防御):首次执行才到这;不可逆硬拦,绝不下发、也不写账本。
-            if proposal is not None and proposal.reversibility != "可逆":
+            if proposal.reversibility != "可逆":
                 self._store.pop(pending.handle)
                 return ToolResult(ok=False, content="",
                                   error=f"拒绝执行不可逆控制(F3 门栓): {name}")
             # ── 写前账本(WAL):首次 put in_flight;failed(上次发失败)→ 重置重试 ──
             if self._ledger_db is not None:
                 if status is None:
-                    await self._ledger_db.put_if_absent(idem, "in_flight", {"content": ""})
-                else:                                   # "failed"
-                    await self._ledger_db.update(idem, "in_flight", {"content": ""})
-            elif idem in self._ledger:                  # 回退账本:已执行 → 返缓存
-                self._store.pop(pending.handle)
-                return self._ledger[idem]
-            token = proposal.token if proposal is not None else ""
+                    claimed = await self._ledger_db.put_if_absent(idem, "in_flight", {"content": ""})
+                else:                                   # "failed" -> CAS 重置重试(仅当仍 failed 才成)
+                    claimed = await self._ledger_db.update(idem, "in_flight", {"content": ""},
+                                                           expected_status="failed")
+                if not claimed:                         # 并发:另一 approve 已在执行/已执行 -> 复用,绝不重复下发
+                    again = await self._ledger_db.get(idem)
+                    st = (again or {}).get("status")
+                    if st == "done":
+                        self._store.pop(pending.handle)
+                        return ToolResult(ok=True, content=(again or {}).get("content", ""))
+                    return await self._resolve_in_flight(idem, proposal)  # in_flight/failed -> 不重发
+            token = proposal.token
             # ★真下发可能抛(token 失效/控制接口不通/超时)——必须接住,**不能让异常炸穿确认流**
             #   (否则前端只看到 "network error",看不到真因)。失败如实回 ok=False + 真原因。
             try:
@@ -171,6 +182,9 @@ class ProposalControlCapability:
             accepted = await self._backend.device_ctrl(payload=dict(args), token=token or None)
         if not accepted:
             return "accepted=False(后端未受理)"
+        if name == "doorControl":              # 门禁为状态型控制,不在 pointTypeParamVOList 读数中 -> 无可对账读数
+            return (f"accepted=True effective=unknown(门禁通道控制,状态型稍后核验) "
+                    f"target={args.get('currentParamValue', '')}")
         # 读回对账:比对**被控参数**的实时读数(pointTypeParamVOList)vs 目标 paramValue。
         # ★顶层 value 是聚合码、非读数(真机实测)——绝不拿它对账(旧 bug:永远 pending)。
         target = str(args.get("paramValue", ""))
@@ -180,8 +194,7 @@ class ProposalControlCapability:
             hits = await self._backend.device_status(token=token or None)
         except Exception as exc:                    # 读回失败不翻转已受理事实,仅标 effective 未知
             return f"accepted=True effective=unknown(读回失败:{exc}) target={target}"
-        hit = next((h for h in hits if h.device_id == device_id),
-                   hits[0] if len(hits) == 1 else None)
+        hit = next((h for h in hits if h.device_id == device_id), None)   # 目标设备不在读回 -> unknown,绝不用别台设备兜底
         if hit is None:
             return f"accepted=True effective=unknown(无设备读回) target={target}"
         if "在线" not in (hit.status or "") and hit.status:

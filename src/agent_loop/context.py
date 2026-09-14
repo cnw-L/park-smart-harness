@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
 from .config import LoopConfig
 from .conversation import Conversation
@@ -10,7 +11,7 @@ from .messages import Message
 class ContextAssembler(Protocol):
     """上下文子系统:每轮动态组装发给模型的输入(视图),不是一条增长的历史。"""
 
-    def assemble(self, config: LoopConfig, conversation: Conversation) -> list[Message]: ...
+    async def assemble(self, config: LoopConfig, conversation: Conversation) -> list[Message]: ...
 
 
 # 记忆/知识层 hook 类型:接收 (config, conversation),返回注入的 Message 列表
@@ -47,7 +48,7 @@ class LayeredContextAssembler:
         self._memory: _LayerHook = memory or _empty_hook
         self._knowledge: _LayerHook = knowledge or _empty_hook
 
-    def assemble(self, config: LoopConfig, conversation: Conversation) -> list[Message]:
+    async def assemble(self, config: LoopConfig, conversation: Conversation) -> list[Message]:
         # ── 缺 user 消息保护(与旧实现语义相同) ────────────────────────────────
         if not any(m.role == "user" for m in conversation.messages):
             raise ValueError(

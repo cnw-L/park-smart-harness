@@ -8,15 +8,13 @@ import asyncio
 
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget, LoopConfig
-from agent_loop.conversation import Boundary, Conversation, InMemoryConversationStore
-from agent_loop.dispatch import ToolExecOutcome
-from agent_loop.loop import run_loop
+from agent_loop.conversation import Conversation, InMemoryConversationStore
 from agent_loop.llm import FakeModelCaller, ModelTurn
+from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.runcontrol import RunControl
 from agent_loop.stubs import echo_tool
-from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult
-
+from agent_loop.tools import LoopToolRegistry
 
 # ─── 共用辅助 ────────────────────────────────────────────────────────────────
 
@@ -76,8 +74,6 @@ def test_interrupt_mid_iteration_rollback():
     """
     reg = LoopToolRegistry(); reg.register(echo_tool())
 
-    rc = RunControl()
-
     class InterruptingExecutor:
         """execute_one() 调用后立即请求中断;仍正常返回工具结果(模拟处理完成但连接即将断开)。"""
         def __init__(self, real_executor, rc: RunControl) -> None:
@@ -96,22 +92,10 @@ def test_interrupt_mid_iteration_rollback():
             return outcomes
 
     from agent_loop.dispatch import SequentialToolExecutor
-    interrupting_exec = InterruptingExecutor(SequentialToolExecutor(), rc)
 
-    # 两轮:第一轮普通 echo → commit;第二轮 echo(中断在 executor 里触发)→ 回滚
-    fake = FakeModelCaller([
-        ModelTurn(content="", tool_calls=[ToolCallReq(id="c1", name="echo", arguments={"text": "iter1"})]),
-        ModelTurn(content="完成", tool_calls=[]),      # 第二轮如果到达则返回 final(不会到达)
-    ])
-    conv = _seeded()
-    cfg = _cfg(); budget = BudgetTracker(cfg.budget)
+    cfg = _cfg()
     store = InMemoryConversationStore()
 
-    # 第一轮:正常提交(使用正常 executor)
-    from agent_loop.dispatch import SequentialToolExecutor
-    fake1 = FakeModelCaller([
-        ModelTurn(content="", tool_calls=[ToolCallReq(id="c1", name="echo", arguments={"text": "iter1"})]),
-    ])
     conv1 = _seeded("t2")
     budget1 = BudgetTracker(cfg.budget)
     # 先让第一轮正常完成(一条 iteration 边界)— 但 FakeModelCaller 只有一条 turn,

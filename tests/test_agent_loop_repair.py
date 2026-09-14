@@ -18,7 +18,6 @@ import asyncio
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.repair import repair_messages
 
-
 # ─── 辅助 ────────────────────────────────────────────────────────────────────
 
 def _msg(role: str, content: str = "", *, tool_call_id: str | None = None,
