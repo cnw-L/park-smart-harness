@@ -11,12 +11,12 @@ from agent_loop.config import LoopBudget, LoopConfig
 from agent_loop.gate import Gate
 from agent_loop.llm import ModelCaller
 from agent_loop.subagent import make_subagent_tool
-from agent_loop.tools import LoopTool, ToolContext, ToolResult, LoopToolRegistry
+from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult
 
 from ..backend import BackendClient, BackendError, FakeBackendClient
 from ..catalog import ToolSpec
-from ..propose import make_propose_control_tool
 from ..proposal import ProposalStore
+from ..propose import make_propose_control_tool
 
 # facility 叶子的 toolset 名单(组织,非元数据)——子 agent 暴露这几个叶子。
 FACILITY_LEAVES = ("device_status", "energy_query", "device_health", "propose_control")

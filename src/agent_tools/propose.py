@@ -75,7 +75,7 @@ def make_propose_control_tool(store: ProposalStore, backend: BackendClient,
         human = f"对「{target}」{g.param_type_name}={g.param_value}（{g.reversibility}）"
         # 动作由 grounding 判定:门禁通道控制 → doorControl(走 /through);其余 → deviceCtrl。
         params = g.door_payload() if g.action == "doorControl" else g.payload()
-        handle = store.put(ControlProposal(
+        store.put(ControlProposal(
             target=target, action=g.action, params=params,
             human=human, reversibility=g.reversibility, token=token or "",
             thread_id=getattr(ctx, "thread_id", "") or ""))   # 会话归属:execute 按会话取,防串提案

@@ -13,7 +13,8 @@ M3:**选择可靠性靠组织结构(分组/分层/隔离/治理)根治,不靠把
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, replace as _dc_replace
+from dataclasses import dataclass
+from dataclasses import replace as _dc_replace
 
 from agent_loop.tools import LoopTool, LoopToolRegistry, OutputBudget
 
@@ -49,7 +50,7 @@ class ToolCatalog:
     def spec(self, name: str) -> ToolSpec:
         return self._specs[name]
 
-    def find(self, name: str) -> "ToolSpec | None":
+    def find(self, name: str) -> ToolSpec | None:
         return self._specs.get(name)
 
     def all(self) -> list[ToolSpec]:
@@ -70,7 +71,7 @@ class ToolCatalog:
         return reg
 
     @staticmethod
-    def _engine_tool(spec: "ToolSpec") -> LoopTool:
+    def _engine_tool(spec: ToolSpec) -> LoopTool:
         """把 spec 的 `output_budget` 接进引擎 `LoopTool.output_budget`(executor 认这个 seam)。
         **控制类不静默截**(读回/确认文本须完整)→ is_control 跳过;工具已自带预算则不覆盖。"""
         if (spec.output_budget is not None and not spec.is_control

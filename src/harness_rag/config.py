@@ -46,7 +46,7 @@ class RagConfig:
     provider_timeout_seconds: float = 60.0
 
     @classmethod
-    def from_env(cls) -> "RagConfig":
+    def from_env(cls) -> RagConfig:
         """环境变量覆盖(对齐原 ASSISTANT_* 名;未设则用默认)。"""
         def _s(name, default):
             return os.getenv(name) or default

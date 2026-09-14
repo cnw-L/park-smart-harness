@@ -45,14 +45,14 @@ def test_dialogue_boundary_best_effort():
 def test_control_boundary_mandatory_raises():
     """含控制(pending_batch)+ 审计失败 → 上抛(C,fail-closed)。"""
     s = AuditedConversationStore(InMemoryConversationStore(), _FailAudit())
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         asyncio.run(s.commit("t", [Message(role="assistant", content="")], _ctrl(1)))
 
 
 def test_resolve_pending_mandatory_raises():
     """resolve_pending(控制已解析)+ 审计失败 → 上抛(C)。"""
     s = AuditedConversationStore(InMemoryConversationStore(), _FailAudit())
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         asyncio.run(s.resolve_pending("t", {}, _dlg(2)))
 
 

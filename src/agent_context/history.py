@@ -205,7 +205,7 @@ def derive_compaction(messages: list[Message]) -> Compaction | None:
 
 def select_compaction_span(
     messages: list[Message], *, keep_first: int, tail_token_budget: int, estimate_tokens
-) -> "tuple[list[Message], list[Message], int] | None":
+) -> tuple[list[Message], list[Message], int] | None:
     """选要摘的中段。返回 (head, middle, recent_turns) 或 None(无可压中段)。
 
     head = 前 keep_first **步**;recent = 从尾按 token 预算保的整步(步对齐保工具配对);

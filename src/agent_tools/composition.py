@@ -20,17 +20,19 @@ from agent_loop.verify import ControlVerifier
 
 from .backend import BackendClient, FakeBackendClient
 from .catalog import ToolCatalog, ToolSpec
-from .gate import CatalogGate
-from .grounding import DEFAULT_REVERSIBILITY_MAP
 from .domains.facility import FACILITY_LEAVES, build_facility_agent, facility_leaf_specs
 from .domains.knowledge import make_knowledge_query_tool
-from .domains.life import (make_meeting_query_tool, make_parking_query_tool,
-                           make_restaurant_query_tool)
+from .domains.life import (
+    make_meeting_query_tool,
+    make_parking_query_tool,
+    make_restaurant_query_tool,
+)
 from .domains.records import make_record_query_tool
 from .execute_proposal import make_execute_proposal_tool
+from .gate import CatalogGate
+from .grounding import DEFAULT_REVERSIBILITY_MAP
 from .proposal import ProposalStore
 from .proposal_control import ProposalControlCapability
-
 
 # 主模型顶层工具名单(组织,非元数据)。叶子(FACILITY_LEAVES)在 catalog 里、不在顶层。
 # ★propose_control 多归属:既是 facility_agent 叶子(诊断流程里附带提案),也升主顶层——简单控制

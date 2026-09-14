@@ -16,7 +16,7 @@ class HarnessRagRetriever:
     """agent_tools.KnowledgeRetriever 实现,后端 = vendored harness_rag 真检索。"""
 
     def __init__(self, config=None, *, reranker=None, query_rewriter=None) -> None:
-        import harness_rag as R                         # 懒导入:用到才拉 milvus/embedding 依赖
+        import harness_rag as R  # 懒导入:用到才拉 milvus/embedding 依赖
         self._R = R
         self._config = config or R.RagConfig.from_env()
         self._build_error = ""                        # 构造失败的真因(别被吞掉,retrieve 里 surface)

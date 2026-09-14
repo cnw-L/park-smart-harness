@@ -3,12 +3,9 @@ from __future__ import annotations
 
 import asyncio
 
-import pytest
-
-from agent_loop.messages import ToolCallReq
 from agent_loop.control import FakeControlCapability
+from agent_loop.messages import ToolCallReq
 from agent_loop.pending import ControlFreezer
-
 
 # ---------------------------------------------------------------------------
 # helpers

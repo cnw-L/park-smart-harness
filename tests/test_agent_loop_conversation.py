@@ -1,7 +1,8 @@
 import asyncio
+
+from agent_loop.conversation import Boundary, Conversation, InMemoryConversationStore
 from agent_loop.messages import Message, ToolCallReq
-from agent_loop.conversation import Conversation, InMemoryConversationStore, Boundary
-from agent_loop.plan import PlanState
+
 
 def test_conversation_appends_messages():
     conv = Conversation(thread_id="t1")

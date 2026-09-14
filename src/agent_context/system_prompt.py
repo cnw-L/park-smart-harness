@@ -80,7 +80,7 @@ class PromptSelection:
     platform: str
 
     @classmethod
-    def from_config(cls, config) -> "PromptSelection":
+    def from_config(cls, config) -> PromptSelection:
         raw_role = (getattr(config, "role", None) or _DEFAULT_ROLE)
         role = raw_role if raw_role in ROLE_PROFILE else (
             "device_sub" if raw_role == "leaf" else _DEFAULT_ROLE

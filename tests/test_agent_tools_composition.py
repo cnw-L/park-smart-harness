@@ -3,14 +3,13 @@ from __future__ import annotations
 
 import asyncio
 
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
 from agent_loop.gate import DefaultGate
 from agent_loop.llm import FakeModelCaller, ModelTurn
 from agent_loop.messages import ToolCallReq
 from agent_loop.tools import ToolContext
-from agent_context.principal import Principal
-
 from agent_tools.composition import build_tool_subsystem
 
 # 子 loop 现在受同一 CatalogGate(deny-first)→ 调叶子需带权限的 principal(device:read+control)。
