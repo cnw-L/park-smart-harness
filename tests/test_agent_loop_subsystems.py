@@ -1,13 +1,14 @@
 import asyncio
-from agent_loop.loop import run_loop
-from agent_loop.dispatch import ToolExecOutcome
-from agent_loop.config import LoopConfig, LoopBudget
-from agent_loop.conversation import Conversation, InMemoryConversationStore
-from agent_loop.tools import LoopToolRegistry, LoopTool, ToolResult
+
 from agent_loop.budget import BudgetTracker
-from agent_loop.stubs import echo_tool
-from agent_loop.llm import ModelTurn, FakeModelCaller
+from agent_loop.config import LoopBudget, LoopConfig
+from agent_loop.conversation import Conversation, InMemoryConversationStore
+from agent_loop.dispatch import ToolExecOutcome
+from agent_loop.llm import FakeModelCaller, ModelTurn
+from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
+from agent_loop.stubs import echo_tool
+from agent_loop.tools import LoopTool, LoopToolRegistry, ToolResult
 
 
 def _cfg(max_iter=5, max_fail=3):
@@ -80,6 +81,6 @@ def test_reasoning_passes_into_assistant_message():
     fake = FakeModelCaller([ModelTurn(content="答案", reasoning="想了想", tool_calls=[])])
     conv = Conversation(thread_id="r"); conv.append(Message(role="user", content="问"))
     cfg = _cfg(); budget = BudgetTracker(cfg.budget)
-    res = asyncio.run(run_loop(cfg, conv, reg, budget, fake, store=InMemoryConversationStore()))
+    asyncio.run(run_loop(cfg, conv, reg, budget, fake, store=InMemoryConversationStore()))
     # 隐=thought 存进 assistant.reasoning,与 content 分开(Hermes 同款)
     assert any(m.role == "assistant" and m.reasoning == "想了想" for m in conv.messages)

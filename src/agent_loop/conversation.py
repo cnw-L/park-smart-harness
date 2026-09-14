@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Protocol
+
 from .messages import Message
 from .plan import PlanState, derive_plan
 

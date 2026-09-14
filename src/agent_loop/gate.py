@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Callable, Literal, Protocol
+from collections.abc import Callable
+from typing import Literal, Protocol
 
 from .messages import ToolCallReq
 from .tools import LoopTool, ToolContext

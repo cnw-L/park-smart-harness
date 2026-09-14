@@ -6,8 +6,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from agent_loop.codec import (
     decode_boundary,
     decode_message,
@@ -23,7 +21,6 @@ from agent_loop.codec import (
 from agent_loop.conversation import Boundary
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.pending import PendingAction
-
 
 # ---------------------------------------------------------------------------
 # 辅助：JSON 往返（所有测试都过此关卡确保 JSON-safe）

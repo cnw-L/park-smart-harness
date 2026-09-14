@@ -9,22 +9,23 @@
   S6-B. repair 接缝:孤立 tool 消息在循环顶部被清除
 """
 from __future__ import annotations
-import asyncio
-from agent_loop.loop import run_loop
-from agent_loop.config import LoopConfig, LoopBudget
-from agent_loop.conversation import Conversation, InMemoryConversationStore, Boundary
-from agent_loop.tools import LoopToolRegistry
-from agent_loop.budget import BudgetTracker
-from agent_loop.control import FakeControlCapability
-from agent_loop.runcontrol import RunControl
-from agent_loop.stubs import echo_tool, device_ctrl_tool, add_tool
-from agent_loop.plan import PlanState, make_plan_tool
-from agent_loop.subagent import make_subagent_tool
-from agent_loop.llm import ModelTurn, FakeModelCaller
-from agent_loop.messages import Message, ToolCallReq
-from agent_loop.gate import DefaultGate
-from agent_loop.verify import VerifyVerdict
 
+import asyncio
+
+from agent_loop.budget import BudgetTracker
+from agent_loop.config import LoopBudget, LoopConfig
+from agent_loop.control import FakeControlCapability
+from agent_loop.conversation import Boundary, Conversation, InMemoryConversationStore
+from agent_loop.gate import DefaultGate
+from agent_loop.llm import FakeModelCaller, ModelTurn
+from agent_loop.loop import run_loop
+from agent_loop.messages import Message, ToolCallReq
+from agent_loop.plan import make_plan_tool
+from agent_loop.runcontrol import RunControl
+from agent_loop.stubs import add_tool, device_ctrl_tool, echo_tool
+from agent_loop.subagent import make_subagent_tool
+from agent_loop.tools import LoopToolRegistry
+from agent_loop.verify import VerifyVerdict
 
 # ─── 共用工厂 ─────────────────────────────────────────────────────────────────
 

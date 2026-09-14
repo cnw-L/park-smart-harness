@@ -9,7 +9,7 @@ import os
 import httpx
 import pytest
 
-from agent_tools.backend import (BackendError, FakeBackendClient, ProdApiBackendClient)
+from agent_tools.backend import BackendError, FakeBackendClient, ProdApiBackendClient
 
 
 def test_fake_backend_device_status():

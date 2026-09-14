@@ -106,12 +106,14 @@ def test_refresh_unset_defaults_true(monkeypatch):
 
 def test_infra_settings_is_immutable():
     """InfraSettings 为 frozen dataclass,赋值应抛 FrozenInstanceError。"""
+    import dataclasses
+
     import pytest
     s = InfraSettings(
         redis_url="r", redis_ttl_minutes=None, redis_refresh_on_read=True,
         pg_dsn="p", llm_base_url="l", llm_api_key="k", llm_model="m",
     )
-    with pytest.raises(Exception):  # FrozenInstanceError(dataclasses)
+    with pytest.raises(dataclasses.FrozenInstanceError):
         s.redis_url = "changed"  # type: ignore[misc]
 
 

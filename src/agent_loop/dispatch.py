@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass
 from typing import Literal, Protocol
+
 from .messages import Message, ToolCallReq
 from .pending import PendingAction
 from .tools import LoopToolRegistry, ToolContext, ToolResult
@@ -93,7 +95,7 @@ class SequentialToolExecutor:
                 result = await asyncio.wait_for(tool.handler(call.arguments, ctx), timeout=timeout)
                 last_exc = None
                 break
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # 墙钟超时 → 可恢复 failed(绝不让单次工具调用卡死整轮);超时不重试。
                 msg = Message(role="tool", name=call.name, tool_call_id=call.id, is_error=True,
                               content=f"[error] 工具「{call.name}」超时({timeout}s)已中断——可重试或换更具体的查询")

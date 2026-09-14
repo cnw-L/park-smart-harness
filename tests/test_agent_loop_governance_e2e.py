@@ -77,16 +77,16 @@ def test_suspend_resume_idempotent_on_real_redis_and_pg():
 
 
 async def _headline() -> None:
-    from agent_loop.redis_store import RedisConversationStore
-    from agent_loop.pg_store import PgStore, PgControlCapability
-    from agent_loop.loop import run_loop
-    from agent_loop.config import LoopConfig, LoopBudget
     from agent_loop.budget import BudgetTracker
-    from agent_loop.tools import LoopToolRegistry
-    from agent_loop.stubs import device_ctrl_tool
-    from agent_loop.messages import Message, ToolCallReq
+    from agent_loop.config import LoopBudget, LoopConfig
     from agent_loop.conversation import Boundary
     from agent_loop.llm import FakeModelCaller, ModelTurn
+    from agent_loop.loop import run_loop
+    from agent_loop.messages import Message, ToolCallReq
+    from agent_loop.pg_store import PgControlCapability, PgStore
+    from agent_loop.redis_store import RedisConversationStore
+    from agent_loop.stubs import device_ctrl_tool
+    from agent_loop.tools import LoopToolRegistry
 
     # 唯一隔离标识（防止并发/上次失败残留干扰）
     unique_prefix = f"h3-gov-{uuid.uuid4().hex[:12]}"
@@ -193,7 +193,7 @@ async def _headline() -> None:
         assert placeholder_msgs[0].content == "[pending_confirmation]", (
             f"占位符内容期望 [pending_confirmation]，得 {placeholder_msgs[0].content!r}"
         )
-        print(f"[H3] Run1 验证通过: Redis 已持久化 awaiting_confirmation + 占位符")
+        print("[H3] Run1 验证通过: Redis 已持久化 awaiting_confirmation + 占位符")
 
         # ── Run 2: resume approve → execute_count==1 + completed ─────────────
         conv2 = await store.load(thread_id)
@@ -238,7 +238,7 @@ async def _headline() -> None:
         assert ledger_row.get("ok") is True, (
             f"PG 台账 ok 字段应为 True，得 {ledger_row!r}"
         )
-        print(f"[H3] Run2 验证通过: execute_count=1, PG 台账已记录, 占位符已替换")
+        print("[H3] Run2 验证通过: execute_count=1, PG 台账已记录, 占位符已替换")
 
         # ── Step 5: 幂等性证明（崩溃重试安全） — 对同一 PendingAction 再 resolve ─
         result_dup = await control.resolve(pending, "approve")
@@ -246,8 +246,7 @@ async def _headline() -> None:
             f"PG ON CONFLICT → 幂等重入不应增加 execute_count，"
             f"实际={control.execute_count}"
         )
-        # 返回结果内容应与首次一致（台账缓存）
-        first_result_content = ctl_msgs[-1].content
+        # 返回结果内容应与首次一致（台账缓存）——一致性由 execute_count 不增 + executed 内容佐证
         assert "executed" in result_dup.content.lower(), (
             f"幂等重入应返回 executed 内容，得 {result_dup.content!r}"
         )
@@ -286,16 +285,16 @@ def test_suspend_then_reject_on_real_redis_and_pg():
 
 
 async def _reject_path() -> None:
-    from agent_loop.redis_store import RedisConversationStore
-    from agent_loop.pg_store import PgStore, PgControlCapability
-    from agent_loop.loop import run_loop
-    from agent_loop.config import LoopConfig, LoopBudget
     from agent_loop.budget import BudgetTracker
-    from agent_loop.tools import LoopToolRegistry
-    from agent_loop.stubs import device_ctrl_tool
-    from agent_loop.messages import Message, ToolCallReq
+    from agent_loop.config import LoopBudget, LoopConfig
     from agent_loop.conversation import Boundary
     from agent_loop.llm import FakeModelCaller, ModelTurn
+    from agent_loop.loop import run_loop
+    from agent_loop.messages import Message, ToolCallReq
+    from agent_loop.pg_store import PgControlCapability, PgStore
+    from agent_loop.redis_store import RedisConversationStore
+    from agent_loop.stubs import device_ctrl_tool
+    from agent_loop.tools import LoopToolRegistry
 
     unique_prefix = f"h3-rej-{uuid.uuid4().hex[:12]}"
     thread_id = f"h3-rej-{uuid.uuid4().hex[:8]}"

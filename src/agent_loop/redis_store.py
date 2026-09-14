@@ -25,8 +25,8 @@ from .codec import (
     encode_boundary,
     encode_message,
 )
-from .messages import Message
 from .conversation import Boundary, Conversation
+from .messages import Message
 from .plan import derive_plan
 
 

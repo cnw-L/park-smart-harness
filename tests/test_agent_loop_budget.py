@@ -1,6 +1,7 @@
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
 
+
 def test_iteration_exhaustion_then_one_grace():
     t = BudgetTracker(LoopBudget(max_iterations=2))
     t.consume(iterations=1); assert not t.exhausted()

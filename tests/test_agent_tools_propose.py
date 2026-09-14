@@ -8,10 +8,9 @@ from agent_loop.llm import FakeModelCaller
 from agent_loop.stubs import device_ctrl_tool
 from agent_loop.subagent import make_subagent_tool
 from agent_loop.tools import LoopToolRegistry
-
 from agent_tools.backend import FakeBackendClient
-from agent_tools.propose import make_propose_control_tool
 from agent_tools.proposal import ProposalStore
+from agent_tools.propose import make_propose_control_tool
 
 
 def _cfg(toolset):

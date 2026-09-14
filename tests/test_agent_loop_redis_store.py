@@ -8,13 +8,11 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 from uuid import uuid4
 
 import pytest
 
-from agent_loop.codec import decode_boundary, decode_message
 from agent_loop.conversation import Boundary
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.pending import PendingAction

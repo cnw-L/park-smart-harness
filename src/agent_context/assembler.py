@@ -25,8 +25,11 @@ from agent_loop.plan import derive_plan
 from agent_loop.repair import repair_messages
 
 from .history import (
-    apply_compaction_view, derive_compaction, drop_answered_tool_results,
-    is_dropped_result, trim_dialogue_turns,
+    apply_compaction_view,
+    derive_compaction,
+    drop_answered_tool_results,
+    is_dropped_result,
+    trim_dialogue_turns,
 )
 from .knowledge import KNOWLEDGE_TOOL, wrap_knowledge
 from .memory import MemoryEngine, render_memory, render_user

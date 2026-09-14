@@ -118,7 +118,7 @@ class ConversationCompactor:
     def should_compact(self, prompt) -> bool:
         return estimate_tokens(prompt) > self._hard      # prompt=list[Message];adapter 侧算 token
 
-    async def compact(self, conversation, seq: int, config) -> "list[Message] | None":
+    async def compact(self, conversation, seq: int, config) -> list[Message] | None:
         span = select_compaction_span(
             conversation.messages, keep_first=self._keep_first,
             tail_token_budget=self._tail, estimate_tokens=estimate_tokens)

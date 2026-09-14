@@ -5,11 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .milvus import Embedder, MilvusClientConfig, MilvusSearchClient
 from .evidence import EvidenceItem
 from .filters import compile_milvus_filter
+from .milvus import Embedder, MilvusClientConfig, MilvusSearchClient
 from .policy import RetrievalPolicy
-
 
 DEFAULT_OUTPUT_FIELDS = [
     "chunk_id",

@@ -7,7 +7,6 @@ from typing import Any
 
 from .policy import RetrievalPolicy
 
-
 ALLOWED_FILTER_FIELDS = {
     "doc_id",
     "doc_type",

@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from uuid import uuid4
+
 from .config import LoopConfig
 from .context import ContextAssembler
 from .conversation import Conversation, InMemoryConversationStore
@@ -19,7 +21,7 @@ def make_subagent_tool(
     sub_registry: LoopToolRegistry,
     model_caller: ModelCaller,
     assembler: ContextAssembler | None = None,
-    gate: "Gate | None" = None,
+    gate: Gate | None = None,
 ) -> LoopTool:
     """把一个隔离子循环包成父可调用的工具:隔离上下文、共享预算池、深度+1、只回吐归一化结果。
 

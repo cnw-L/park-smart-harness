@@ -1,12 +1,10 @@
 """Task 4 — 任务层:plan.py(result/容错)+ 中圈 plan_view(渲染人话/排除两 case)。"""
 from __future__ import annotations
 
+from agent_context.plan_view import exclude_plan_calls, render_plan
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.plan import PlanItem, PlanState, make_plan_tool
 from agent_loop.repair import repair_messages
-
-from agent_context.plan_view import exclude_plan_calls, render_plan
-
 
 # ── plan.py 改动 ──────────────────────────────────────────────────────────────
 
