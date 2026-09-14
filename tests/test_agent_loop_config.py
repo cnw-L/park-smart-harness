@@ -1,5 +1,6 @@
 from agent_loop.config import LoopBudget, LoopConfig
 
+
 def test_loop_config_holds_per_layer_knobs():
     budget = LoopBudget(max_iterations=5, token_budget=1000)
     cfg = LoopConfig(model="hy3-preview", max_tokens=800, temperature=0.0,

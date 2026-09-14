@@ -17,20 +17,43 @@ from .rerank import Reranker
 from .retriever import MilvusHybridKnowledgeRetriever, MilvusSearchConfig
 from .rewrite import ChatCompleter, LlmQueryRewriter
 from .schema import MilvusKnowledgeSchemaConfig, ensure_knowledge_collection
-from .service import (KnowledgeRetriever, QueryRewriter, evidence_prompt,
-                      retrieve_evidence, retrieve_with_request)
+from .service import (
+    KnowledgeRetriever,
+    QueryRewriter,
+    evidence_prompt,
+    retrieve_evidence,
+    retrieve_with_request,
+)
 
 __all__ = [
-    "RagConfig", "RetrievalContext", "RetrievalRequest", "RetrievalResponse",
-    "EvidenceBundle", "EvidenceItem", "RetrievalDiagnostics", "render_evidence_for_prompt",
-    "QueryRewritePlan", "QueryRewriteStrategy", "RetrievalPolicy", "build_initial_policy",
-    "OpenAIEmbeddingAdapter", "QwenRerankerAdapter", "Reranker",
-    "MilvusHybridKnowledgeRetriever", "MilvusSearchConfig",
-    "ChatCompleter", "LlmQueryRewriter",
-    "MilvusKnowledgeSchemaConfig", "ensure_knowledge_collection",
-    "KnowledgeRetriever", "QueryRewriter", "evidence_prompt",
-    "retrieve_evidence", "retrieve_with_request",
-    "build_retriever", "build_reranker",
+    "ChatCompleter",
+    "EvidenceBundle",
+    "EvidenceItem",
+    "KnowledgeRetriever",
+    "LlmQueryRewriter",
+    "MilvusHybridKnowledgeRetriever",
+    "MilvusKnowledgeSchemaConfig",
+    "MilvusSearchConfig",
+    "OpenAIEmbeddingAdapter",
+    "QueryRewritePlan",
+    "QueryRewriteStrategy",
+    "QueryRewriter",
+    "QwenRerankerAdapter",
+    "RagConfig",
+    "Reranker",
+    "RetrievalContext",
+    "RetrievalDiagnostics",
+    "RetrievalPolicy",
+    "RetrievalRequest",
+    "RetrievalResponse",
+    "build_initial_policy",
+    "build_reranker",
+    "build_retriever",
+    "ensure_knowledge_collection",
+    "evidence_prompt",
+    "render_evidence_for_prompt",
+    "retrieve_evidence",
+    "retrieve_with_request",
 ]
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from .config import LoopBudget
+
 
 class BudgetTracker:
     """主/子共享同一实例 = 共享预算池。"""

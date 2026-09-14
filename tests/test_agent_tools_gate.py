@@ -5,14 +5,12 @@ import asyncio
 
 import httpx
 
+from agent_context.principal import Principal
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
 from agent_loop.llm import FakeModelCaller
 from agent_loop.messages import ToolCallReq
 from agent_loop.tools import LoopTool, ToolContext
-
-from agent_context.principal import Principal
-
 from agent_tools.backend import FakeBackendClient, ProdApiBackendClient
 from agent_tools.catalog import ToolCatalog, ToolSpec
 from agent_tools.composition import build_tool_subsystem

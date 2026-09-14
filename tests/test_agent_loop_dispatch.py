@@ -8,14 +8,14 @@ S2 设计不变量:
     (S2 起控制工具应由 gate ask 路径在 loop 层处理;executor 是最后一道防线)
 """
 from __future__ import annotations
+
 import asyncio
-import pytest
-from agent_loop.dispatch import SequentialToolExecutor, ToolExecOutcome
-from agent_loop.tools import LoopTool, LoopToolRegistry, ToolContext, ToolResult, OutputBudget
-from agent_loop.messages import Message, ToolCallReq
+
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
-
+from agent_loop.dispatch import SequentialToolExecutor
+from agent_loop.messages import ToolCallReq
+from agent_loop.tools import LoopTool, LoopToolRegistry, OutputBudget, ToolContext, ToolResult
 
 # ─── 共用辅助 ────────────────────────────────────────────────────────────────
 

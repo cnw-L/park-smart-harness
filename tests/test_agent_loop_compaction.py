@@ -8,6 +8,9 @@ from __future__ import annotations
 import asyncio
 import json
 
+from agent_context.assembler import ParkContextAssembler
+from agent_context.compactor import ConversationCompactor, FakeSummarizer
+from agent_context.history import _COMPACTION, derive_compaction
 from agent_loop.budget import BudgetTracker
 from agent_loop.codec import decode_messages, encode_messages
 from agent_loop.config import LoopBudget, LoopConfig
@@ -16,10 +19,6 @@ from agent_loop.llm import FakeModelCaller, ModelTurn
 from agent_loop.loop import run_loop
 from agent_loop.messages import Message, ToolCallReq
 from agent_loop.tools import LoopToolRegistry
-
-from agent_context.assembler import ParkContextAssembler
-from agent_context.compactor import ConversationCompactor, FakeSummarizer
-from agent_context.history import _COMPACTION, derive_compaction
 
 
 def _comp_msgs(summary, *, covers=0, head_keep=1, recent_turns=1, tid="cmp"):

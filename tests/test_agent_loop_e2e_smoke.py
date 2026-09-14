@@ -26,15 +26,15 @@ def test_e2e_real_qwen_redis_one_turn():
 
 
 async def _e2e_smoke() -> None:
-    from agent_loop.redis_store import RedisConversationStore
-    from agent_loop.providers import OpenAIModelCaller
-    from agent_loop.loop import run_loop
-    from agent_loop.config import LoopConfig, LoopBudget
     from agent_loop.budget import BudgetTracker
-    from agent_loop.tools import LoopToolRegistry
-    from agent_loop.stubs import echo_tool
-    from agent_loop.messages import Message
+    from agent_loop.config import LoopBudget, LoopConfig
     from agent_loop.conversation import Boundary
+    from agent_loop.loop import run_loop
+    from agent_loop.messages import Message
+    from agent_loop.providers import OpenAIModelCaller
+    from agent_loop.redis_store import RedisConversationStore
+    from agent_loop.stubs import echo_tool
+    from agent_loop.tools import LoopToolRegistry
 
     # 唯一前缀 + thread_id,保证测试隔离
     unique_prefix = f"e2e-smoke-{uuid.uuid4().hex[:12]}"

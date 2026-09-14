@@ -7,14 +7,11 @@
 """
 from __future__ import annotations
 
-import pytest
-
-from agent_loop.gate import DefaultGate
-from agent_loop.tools import LoopTool, ToolContext, ToolResult
-from agent_loop.messages import ToolCallReq
 from agent_loop.budget import BudgetTracker
 from agent_loop.config import LoopBudget
-
+from agent_loop.gate import DefaultGate
+from agent_loop.messages import ToolCallReq
+from agent_loop.tools import LoopTool, ToolContext, ToolResult
 
 # ─── 辅助 ────────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 """Task 2 — 记忆层:身份事实 + 长期记忆召回注入。"""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -47,7 +47,7 @@ def _entry(content: str, kind: str = "semantic", user_id: str = "u1", **kwargs) 
         user_id=user_id,
         kind=kind,
         content=content,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         **kwargs,
     )
 
@@ -106,7 +106,7 @@ async def test_memory_engine_anonymous_returns_empty():
 @pytest.mark.asyncio
 async def test_memory_engine_expired_entries_filtered():
     store = InMemoryMemoryStore()
-    expired = _entry("过期事实", "semantic", expires_at=datetime.now(timezone.utc) - timedelta(days=1))
+    expired = _entry("过期事实", "semantic", expires_at=datetime.now(UTC) - timedelta(days=1))
     await store.save(expired)
     engine = MemoryEngine(store)
     p = Principal(id="u1", name="张三", role="员工")
@@ -149,7 +149,7 @@ def test_streaming_scrubber_across_chunks():
 # ── 数据模型 ──────────────────────────────────────────────────────────────────
 
 def test_memory_entry_expired():
-    e = _entry("x", expires_at=datetime.now(timezone.utc) - timedelta(seconds=1))
+    e = _entry("x", expires_at=datetime.now(UTC) - timedelta(seconds=1))
     assert e.is_expired()
 
 

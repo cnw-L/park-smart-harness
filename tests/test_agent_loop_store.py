@@ -5,11 +5,9 @@ TDD: these tests are written BEFORE the implementation and must fail first, then
 from __future__ import annotations
 
 import asyncio
-import pytest
 
 from agent_loop.conversation import Boundary, InMemoryConversationStore
 from agent_loop.messages import Message
-
 
 # ---------------------------------------------------------------------------
 # Helpers

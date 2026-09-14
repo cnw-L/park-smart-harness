@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from .tools import LoopTool, ToolContext, ToolResult
+
 from .messages import Message
+from .tools import LoopTool, ToolContext, ToolResult
 
 
 @dataclass

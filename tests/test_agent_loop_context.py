@@ -8,19 +8,18 @@
 from __future__ import annotations
 
 import asyncio
+
 import pytest
 
-from agent_loop.context import LayeredContextAssembler
-from agent_loop.config import LoopConfig, LoopBudget
-from agent_loop.conversation import Conversation, InMemoryConversationStore
-from agent_loop.messages import Message
-from agent_loop.plan import PlanState, make_plan_tool
 from agent_loop.budget import BudgetTracker
-from agent_loop.loop import run_loop
-from agent_loop.tools import LoopToolRegistry
-from agent_loop.stubs import echo_tool
+from agent_loop.config import LoopBudget, LoopConfig
+from agent_loop.context import LayeredContextAssembler
+from agent_loop.conversation import Conversation, InMemoryConversationStore
 from agent_loop.llm import FakeModelCaller, ModelTurn
-
+from agent_loop.loop import run_loop
+from agent_loop.messages import Message
+from agent_loop.stubs import echo_tool
+from agent_loop.tools import LoopToolRegistry
 
 # ─── 辅助 ─────────────────────────────────────────────────────────────────────
 

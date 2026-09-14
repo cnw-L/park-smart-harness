@@ -27,7 +27,7 @@ class Compactor(Protocol):
       或 None(无可压中段)。
     """
     def should_compact(self, prompt) -> bool: ...
-    async def compact(self, conversation, seq: int, config) -> "list[Message] | None": ...
+    async def compact(self, conversation, seq: int, config) -> list[Message] | None: ...
 
 
 COMPACT_THRASH_LIMIT = 2
@@ -47,7 +47,7 @@ class _PersistError(Exception):
     仅由 _safe_* 系列包装函数产生,不得在其他地方使用。"""
 
 
-async def _safe_latest_boundary(store: ConversationStore, thread_id: str) -> "Boundary | None":
+async def _safe_latest_boundary(store: ConversationStore, thread_id: str) -> Boundary | None:
     """store.latest_boundary 失败时转为 _PersistError。"""
     try:
         return await store.latest_boundary(thread_id)
@@ -58,8 +58,8 @@ async def _safe_latest_boundary(store: ConversationStore, thread_id: str) -> "Bo
 async def _safe_resolve_pending(
     store: ConversationStore,
     thread_id: str,
-    resolved: "dict[str, Message]",
-    boundary: "Boundary",
+    resolved: dict[str, Message],
+    boundary: Boundary,
 ) -> None:
     """store.resolve_pending 失败时转为 _PersistError。"""
     try:
@@ -71,8 +71,8 @@ async def _safe_resolve_pending(
 async def _safe_commit(
     store: ConversationStore,
     thread_id: str,
-    buffer: "list[Message]",
-    boundary: "Boundary",
+    buffer: list[Message],
+    boundary: Boundary,
 ) -> None:
     """store.commit 失败时转为 _PersistError。"""
     try:
@@ -126,7 +126,7 @@ async def run_loop(
     cancel: bool = False,                        # True → 整批 reject-all → 干净边界 → 处理新意图
     depth: int = 0,
     verifier: Verifier = _DEFAULT_VERIFIER,
-    compaction: "Compactor | None" = None,
+    compaction: Compactor | None = None,
     session_id: str | None = None,          # 会话(用户)id;子 loop 透传父会话,使控制提案按会话切片
 ) -> LoopResult:
     """事务型内圈引擎:一轮迭代 = 一个事务(assemble→model→tool batch→commit)。
@@ -380,7 +380,8 @@ async def run_loop(
                     allow_items.append((i, call, tool))
 
             # ── 第二遍:allow 只读调用并发执行(asyncio.gather),保序;verify 各自跑 ──
-            async def _run_allow(call, tool):
+            # ctx 显式传参绑定(B023):不捕获外层可变绑定,执行时机变化也不会错绑到其他轮次
+            async def _run_allow(call, tool, ctx):
                 outcome = await executor.execute_one(call, registry, ctx)
                 # execute_one 的 executed/failed 必带 message;None 仅属 awaiting_confirmation
                 # (执行器不再产生该态)。失声即 append(None) 会污染序列,故显式断言。
@@ -403,12 +404,12 @@ async def run_loop(
                 return outcome
 
             if allow_items:
-                outcomes = await asyncio.gather(*[_run_allow(c, t) for (_i, c, t) in allow_items])
+                outcomes = await asyncio.gather(*[_run_allow(c, t, ctx) for (_i, c, t) in allow_items])
                 # 按 allow_items 的原顺序回填 + 按该顺序更新 failures(等价于串行逐个处理 allow)。
                 # 注:ask(control=None)的 failures+=1 在分类遍已计;allow 的 reset 在此遍。
                 # 二者跨类交错顺序与旧串行码略不同,但仅在「allow + 无 control 的 ask 同批」时有别——
                 # 那是子 agent 误带控制工具的已防御死分支(工厂已拒),实务不可达。
-                for (i, _c, _t), outcome in zip(allow_items, outcomes):
+                for (i, _c, _t), outcome in zip(allow_items, outcomes, strict=True):
                     results[i] = outcome.message
                     if outcome.disposition == "failed":
                         failures += 1
