@@ -65,3 +65,9 @@
   输出 APPROVE 或 REQUEST_CHANGES（Blocking / Non-blocking 分列）。
 - 验证不通过不能声称完成；skipped 的测试不是通过；不 force-push 掩盖失败历史。
 - review 的 blocking 发现逐 PR 记入 `wiki/impact.md`（连续多个 PR 零 blocking = 先查 review 独立性）。
+- 评审权限对齐（gh-aw 自动评审启用后）：分支保护的 approval 只认人类——agent 评审结论
+  （COMMENT / REQUEST_CHANGES）是线索不是批准；agent 的 REQUEST_CHANGES 由维护者裁决后接受或驳回。
+  触及 `.github/workflows/` 的 PR 不走自动评审（评审策略自修改面，人工直审）。
+- gh-aw workflow 的运行前置：仓库 Secrets 需配置 `ANTHROPIC_API_KEY`（及 gh-aw 所需 token）；
+  未配置时合入 workflow 会导致每个 PR / Issue 必现失败 run——配置确认是合入门槛的一部分。
+  源文件（`.md`）修改后必须重编 lock（`gh aw compile`）再提交。
